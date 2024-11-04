@@ -5,6 +5,7 @@ import numpy as np
 from scipy.special import comb, gammaln
 from scipy.stats import expon
 from sklearn.metrics import cluster
+from typing import Dict, List, Optional, Tuple
 
 
 def sparse_contingency_table_count(U, V, n):
@@ -735,6 +736,115 @@ def fission(U, V_prime):
             fission_predog_set = fission_predog_set.union(set([*V_prime[refog_key].keys()]))
 
     return fission_refog_set, fission_predog_set
+
+
+def calculate_benchmarks_pairwise(
+        ref_ogs: Dict[str, str],
+        pred_ogs: Dict[str, str],
+        uncert_genes: Optional[Dict] = None,
+        q_even: bool = True,
+        q_remove_uncertain: bool = True,
+    ):
+    referenceOGs = ref_ogs
+    predictedOGs = pred_ogs
+    totalFP = 0.0
+    totalFN = 0.0
+    totalTP = 0.0
+    totalGroundTruth = 0.0
+    n_exact = 0
+    n_splits = []
+    # so as not to count uncertain genes either way remove them from the
+    # expected and remove them from any predicted OG (as though they never existed!)
+    totalGenes = 0.0
+
+    for refog_key in referenceOGs:
+        refOg = referenceOGs[refog_key]
+        if uncert_genes is not None:
+            uncert = uncert_genes[refog_key]
+
+        thisFP = 0.0
+        thisFN = 0.0
+        thisTP = 0.0
+        this_split = 0
+        if q_remove_uncertain and uncert_genes is not None:
+            refOg = refOg.difference(uncert)
+
+        nRefOG = len(refOg)
+        totalGenes += nRefOG
+        not_present = set(refOg)
+        intersection = 0
+
+        for predog_key in predictedOGs:
+            predOg = predictedOGs[predog_key]
+            overlap = len(refOg.intersection(predOg))
+
+            intersection += overlap
+
+            if overlap > 0:
+                if q_remove_uncertain and uncert_genes is not None:
+                    predOg = predOg.difference(
+                        uncert
+                    )  # I.e. only discount genes that are uncertain w.r.t. this RefOG
+                overlap = len(refOg.intersection(predOg))
+
+            if overlap > 0:
+                this_split += 1
+                not_present = not_present.difference(predOg)
+
+                thisTP += overlap * (overlap - 1) / 2  # n-Ch-2
+                thisFP += overlap * (len(predOg) - overlap)
+                thisFN += (nRefOG - overlap) * overlap
+
+        # print(intersection_dict[refognum])
+
+        # Are FNs more from splintered OGs or missing genes?
+        # print("%f\t%f" % (thisFN/2./(nRefOG-1), len(not_present)*(nRefOG-1)/2./(nRefOG-1)))
+        # finally, count all the FN pairs from those not in any predicted OG
+        thisFN += len(not_present) * (nRefOG - 1)
+        # don't count 'orphan genes' as splits, it's more informative only to count
+        # clusters that this orthogroup has been split into. Recall already counts
+        #  the missing genes, this should give a distinct measure.
+        # this_split += len(not_present)
+        # All FN have been counted twice
+        assert thisFN % 2 == 0
+        n_splits.append(this_split)
+        # print(this_split)      # Orthogroup fragments
+        # print(len(not_present))  # Unclustered genes
+        thisFN /= 2
+        # sanity check
+        nPairs1 = thisTP + thisFN
+        nPairs2 = nRefOG * (nRefOG - 1) / 2
+        if nPairs1 != nPairs2:
+            print("ERROR: %d != %d" % (nPairs1, nPairs2))
+
+        totalGroundTruth += nPairs1
+        if thisFN == 0 and thisFP == 0:
+            n_exact += 1
+        if q_even:
+            N = float(len(refOg) - 1)
+            totalFN += thisFN / N
+            totalFP += thisFP / N
+            totalTP += thisTP / N
+        else:
+            totalFN += thisFN
+            totalFP += thisFP
+            totalTP += thisTP
+
+    TP, FP, FN = (totalTP, totalFP, totalFN)
+    if TP != 0 or FP != 0:
+        pres = TP / (TP + FP)
+    else:
+        pres = 0.0
+    if TP != 0 or FN != 0:
+        recall = TP / (TP + FN)
+    else:
+        recall = 0.0
+    if pres != 0 or recall != 0:
+        f = 2 * pres * recall / (pres + recall)
+    else:
+        f = 0.0
+
+    return TP, FP, FN, recall, pres, f
 
 
 if __name__ == "__main__":

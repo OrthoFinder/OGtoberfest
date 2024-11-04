@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import traceback
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
@@ -7,6 +8,14 @@ from inspect import getmembers, isfunction
 from rich import print
 
 CMD_MANAGER: Literal["preprocess", "benchmark"] = "preprocess"
+
+
+def curate_labels(label: str):
+    COMPILE = re.compile(r"[_\s]+")
+    label = COMPILE.sub(" ", label).split()
+    label = "_".join(label)
+
+    return label
 
 
 def check_cmd_args(args: List[str]):
@@ -36,7 +45,7 @@ def check_cmd_args(args: List[str]):
             and (args[1] == "--help" or args[1] == "-h"):
             print_help(args[0])
             sys.exit()
-        else:
+        elif args[0] not in ["preprocess", "benchmark"]:
             print(
                 "Unrecognised input arguments!"
             )

@@ -36,7 +36,7 @@
                 "--database"
             ],
             "name": "databse_path",
-            "default": "../../OrthoBench/proteomes",
+            "default": "../../OrthoBench/proteomes_gene_labels",
             "action": "",
             "description": "A directory containing the fasta files",
             "help": "",
@@ -53,7 +53,7 @@
                 "--input"
             ],
             "name": "input_path",
-            "default": "",
+            "default": "../../OrthoBench/preprocessed_predicted_orthogroups",
             "action": "",
             "description": "File containing reference orthogroups",
             "help": "",
@@ -68,9 +68,76 @@
                 "--output"
             ],
             "name": "output_path",
-            "default": "",
+            "default": "../../OrthoBench",
             "action": "",
-            "description": "Directory containing predicted orthogroup files",
+            "description": "Directory containing score files",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-D",
+                "--database"
+            ],
+            "name": "databse_path",
+            "default": "../../OrthoBench/proteomes_gene_labels",
+            "action": "",
+            "description": "A directory containing the fasta files",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-rog",
+                "--refog"
+            ],
+            "name": "refog_path",
+            "default": "../../OrthoBench/reference_orthogroups.tsv",
+            "action": "",
+            "description": "A file containing the reference Orthogroups",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-og",
+                "--outgroups"
+            ],
+            "name": "outgroups",
+            "default": [
+                "Mnemiopsis_leidyi",
+                "Trichoplax_adhaerens",
+                "Nematostella_vectensis"
+            ],
+            "action": "",
+            "description": "Outgroup species",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-as",
+                "--additional-species"
+            ],
+            "name": "additional-species",
+            "default": [
+                "Branchiostoma_lanceolatum",
+                "Schistosoma_mansoni"
+            ],
+            "action": "",
+            "description": "Additional species",
             "help": "",
             "limit": "",
             "valid_options": "",

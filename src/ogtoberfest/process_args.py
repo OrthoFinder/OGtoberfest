@@ -82,9 +82,9 @@ def create_options(args: List[str], task=CMD_MANAGER) -> Manager:
 
             if "path" in attr_name:
                 if os.path.isfile(arg_value):
-                    arg_value = pathlib.Path(utils.get_file_arg(arg_value))
+                    arg_value = pathlib.Path(utils.get_file_arg(arg_value)).resolve()
                 elif os.path.isdir(arg_value):
-                    arg_value = pathlib.Path(utils.get_dir_arg(arg_value))
+                    arg_value = pathlib.Path(utils.get_dir_arg(arg_value)).resolve()
                 else:
                     if attr_name == "input_path":
                         print(f"Error: '{arg_value}' is not a valid path or it does not exist!")
@@ -92,6 +92,11 @@ def create_options(args: List[str], task=CMD_MANAGER) -> Manager:
                     elif attr_name == "output_path":
                         output_path_name = arg_value
                         continue
+            if attr_name in ["outgroups", "additional-species", "input-species"]:
+                arg_value = [
+                    utils.curate_labels(item) 
+                    for item in arg_value.strip().split(",")
+                ]
 
             # need further action
             if len(arg_dict["limit"]) != 0:
@@ -104,7 +109,20 @@ def create_options(args: List[str], task=CMD_MANAGER) -> Manager:
                     utils.fail()
             setattr(manager.options, attr_name, arg_value)
 
-    handle_missing_path_args(manager, output_path_name, task)
+    if task == "preprocess":
+        prefix = "preprocessed"
+    else:
+        prefix = "scores"
+
+    handle_missing_path_args(manager, output_path_name, prefix, task)
+
+    if manager.options.input_path.parent.name == "OrthoBench" and task == "benchmark":
+        if not hasattr(manager.options, "outgroups"):
+            arg_dict = read_args_from_json(task, "--outgroups")
+            manager.options.outgroups = arg_dict["default"]
+        if not hasattr(manager.options, "additional_species"):
+            arg_dict = read_args_from_json(task, "--additional-species")
+            manager.options.additional_species = arg_dict["default"]
 
     if show_args:
         print("Here is your input arguments:")
@@ -123,7 +141,8 @@ def read_args_from_json(task=CMD_MANAGER, flag: str = "") -> Optional[Dict[str, 
     return
 
 
-def handle_missing_path_args(manager: Manager, output_path_name: str, task=CMD_MANAGER):
+def handle_missing_path_args(manager: Manager, output_path_name: str, prefix: str, task=CMD_MANAGER,):
+
     input_path_exist = True
     if not hasattr(manager.options, "input_path"):
         input_path_exist = False
@@ -139,29 +158,24 @@ def handle_missing_path_args(manager: Manager, output_path_name: str, task=CMD_M
             default_dir = THIS_DIR / arg_dict["default"]
             output_path = default_dir.resolve() / manager.options.input_path.name
             output_path_isdir = True
-        else:
-            if task == "preprocess":
-                prefix = "preprocessed"
+
+        if manager.options.input_path.is_file():
+            if len(output_path_name) == 0:
+                output_path_filename = \
+                    "_".join((prefix, manager.options.input_path.name.split(".")[0]))
             else:
-                prefix = "benchmarking_results"
+                output_path_filename = \
+                    "_".join((prefix, output_path_name + ".tsv"))
+            output_path = manager.options.input_path.parent / output_path_filename
 
-            if manager.options.input_path.is_file():
-                if len(output_path_name) == 0:
-                    output_path_filename = \
-                        "_".join((prefix, manager.options.input_path.name.split(".")[0]))
-                else:
-                    output_path_filename = \
-                        "_".join((prefix, output_path_name + ".tsv"))
-                output_path = manager.options.input_path.parent / output_path_filename
-
-            elif manager.options.input_path.is_dir():
-                if len(output_path_name) == 0:
-                    output_path_dirname = \
-                        "_".join((prefix, manager.options.input_path.name))
-                else:
-                    output_path_filename = "_".join((prefix, output_path_name))
-                output_path = manager.options.input_path.parent / output_path_dirname
-                output_path_isdir = True
+        elif manager.options.input_path.is_dir():
+            if len(output_path_name) == 0:
+                output_path_dirname = \
+                    "_".join((prefix, manager.options.input_path.name))
+            else:
+                output_path_filename = "_".join((prefix, output_path_name))
+            output_path = manager.options.input_path.parent / output_path_dirname
+            output_path_isdir = True
 
         setattr(manager.options, "output_path", output_path)
 
@@ -174,3 +188,10 @@ def handle_missing_path_args(manager: Manager, output_path_name: str, task=CMD_M
             arg_dict = read_args_from_json(task, "--database")
             database_path = THIS_DIR / arg_dict["default"]
             setattr(manager.options, "database_path", database_path.resolve())
+
+    if task == "benchmark":
+        if not hasattr(manager.options, "refog_path"):
+            if manager.options.input_path.parent.name == "OrthoBench":
+                arg_dict = read_args_from_json(task, "--refog")
+                refog_path = THIS_DIR / arg_dict["default"]
+                setattr(manager.options, "refog_path", refog_path.resolve())

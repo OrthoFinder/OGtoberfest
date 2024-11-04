@@ -15,7 +15,7 @@ def hieranoid(input_file, output_file, protemes_dir: pathlib.Path):
         with open(file, "r") as reader:
             for line in reader:
                 if ">" in line:
-                    gene = line[1:].strip()
+                    gene = line[1:].strip().split(".", 1)[-1]
                     species_gene_dict[gene] = species
 
     with open(output_file, "w") as writer:
