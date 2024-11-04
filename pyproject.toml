@@ -1,0 +1,159 @@
+[build-system]
+requires = ["setuptools>=64", "setuptools_scm>=8", "wheel", "packaging"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ogtoberfest"
+authors = [{ name = "Yi Liu", email = "caoxen7ys@yahoo.com" }]
+description = "Benchmarking Orthogroups and Orthologs"
+readme = "README.md"
+version = "0.0.0"
+requires-python = ">=3.9"
+keywords = ["Benchmarking", "Orthogoups", "Orthologs"]
+license = { file = "LICENSE" }
+classifiers = [
+    # How mature is this project? Common values are
+    #   3 - Alpha
+    #   4 - Beta
+    #   5 - Production/Stable
+    'Development Status :: 4 - Beta',
+
+    # Indicate who your project is intended for
+    'Intended Audience :: Science/Research',
+    'Topic :: Scientific/Engineering :: Bio-Informatics',
+
+    # Pick your license as you wish (should match "license" above)
+    'License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)',
+
+    # Specify the Python versions you support here.
+    'Programming Language :: Python :: 3.9',  # 
+    "Programming Language :: Python :: 3.10", # base version
+    "Programming Language :: Python :: 3.11", # 
+    "Programming Language :: Python :: 3.12", # 
+]
+dependencies = ["numpy", "scipy", "scikit-learn", "rich"]
+
+[project.urls]
+repository = "https://github.com/OrthoFinder/OGtoberfest"
+
+[project.optional-dependencies]
+all = ["ogtoberfest[build,dev,test]"]
+build = [
+    "build",
+    "twine",
+    "wheel",
+    "setuptools>=64",
+    "setuptools_scm>=8",
+    "packaging",
+]
+dev = [
+    "python-semantic-release",
+    "mypy",
+    "memory_profiler",
+    "ruff",
+    "black",
+    "pipdeptree",
+    "graphviz",                # `sudo apt-get install graphviz` need to install
+]
+test = ["pytest", "pytest-cov[all]"]
+
+# pip install '.[dev]'
+# pipdeptree -p ogtoberfest --graph-output png > dependency-graph.png
+
+[project.scripts]
+ogtoberfest = "ogtoberfest.main:main"
+
+[tool.semantic_release]
+version_variable = "pyproject.toml:version"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["ogtoberfest*"]
+
+[tool.setuptools.package-data]
+"ExampleData" = ["*"]
+
+
+[tool.setuptools.exclude-package-data]
+ogtoberfest = ["**/__pycache__", "**/*.pyc", "tests"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=ogtoberfest"
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "disabled: marks tests as disabled (deselect with '-m \"not disabled\"')",
+    "regression: marks a test as a regression test",
+]
+
+[tool.mypy]
+mypy_path = "src"
+check_untyped_defs = true
+disallow_any_generics = true
+ignore_missing_imports = true
+no_implicit_optional = true
+show_error_codes = true
+strict_equality = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+no_implicit_reexport = true
+
+[tool.setuptools_scm]
+version_file = "src/ogtoberfest/_version.py"
+version_scheme = "no-guess-dev"
+root = "."
+tag_regex = "^(?P<prefix>v)?(?P<version>[^\\+]+)(?P<suffix>.*)?$"
+fallback_version = "1.0.0"
+local_scheme = "dirty"
+
+[tool.black]
+line-length = 119
+exclude = "venv"
+
+[tool.flake8]
+docstring-convention = "all"
+ignore = ["D107", "D212", "E501", "W503", "W605", "D203", "D100"]
+exclude = ["venv"]
+max-line-length = 99
+
+# radon 
+radon-max-cc = 10
+
+[tool.isort]
+profile = "black"
+multi_line_output = "VERTICAL_HANGING_INDENT"
+force_grid_wrap = 2
+line_length = 99
+
+[tool.pylint."message control"]
+disable = [
+    "line-too-long",
+    "trailing-whitespace",
+    "missing-function-docstring",
+    "consider-using-f-string",
+    "import-error",
+    "too-few-public-methods",
+    "redefined-outer-name",
+]
+
+[tool.ruff]
+# ruff check --config ./pyproject.toml src
+# Enable flake8-bugbear (`B`) rules.
+select = ["E", "F", "B", "ERA"]
+
+# Never enforce `E501` (line length violations).
+ignore = ["E501", "ERA001"]
+
+# Avoid trying to fix flake8-bugbear (`B`) violations.
+unfixable = ["B"]
+
+line-length = 99
+
+# Ignore `E402` (import violations) in all `__init__.py` 
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["E402"]

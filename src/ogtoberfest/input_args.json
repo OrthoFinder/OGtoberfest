@@ -1,0 +1,81 @@
+{
+    "preprocess": [
+        {
+            "flag": [
+                "-i",
+                "--input"
+            ],
+            "name": "input_path",
+            "default": "../../OrthoBench/predicted_orthogroups",
+            "action": "",
+            "description": "A file of directory containing the original predicted orthogroup file(s)",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-o",
+                "--output"
+            ],
+            "name": "output_path",
+            "default": "../../OrthoBench",
+            "action": "",
+            "description": "A file of directory containing the format regulated predicted orthogroup file(s)",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-D",
+                "--database"
+            ],
+            "name": "databse_path",
+            "default": "../../OrthoBench/proteomes",
+            "action": "",
+            "description": "A directory containing the fasta files",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        }
+    ],
+    "benchmark": [
+        {
+            "flag": [
+                "-i",
+                "--input"
+            ],
+            "name": "input_path",
+            "default": "",
+            "action": "",
+            "description": "File containing reference orthogroups",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-o",
+                "--output"
+            ],
+            "name": "output_path",
+            "default": "",
+            "action": "",
+            "description": "Directory containing predicted orthogroup files",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        }
+    ]
+}
