@@ -10,6 +10,7 @@ CMD_MANAGER: Literal["preprocess", "benchmark"] = "preprocess"
 THIS_DIR = pathlib.Path(__file__).parent
 ARGS_JSON_PATH = THIS_DIR / "./input_args.json"
 
+CWD = pathlib.Path.cwd()
 
 class Manager:
     def __init__(self, task: CMD_MANAGER):
@@ -19,7 +20,6 @@ class Manager:
     def __repr__(self):
         attributes_dict = {"task": self.task}
         return f"Manager({attributes_dict})"
-
 
 class Options:
     def __init__(self):
@@ -92,10 +92,16 @@ def create_options(args: List[str], task=CMD_MANAGER) -> Manager:
                     elif attr_name == "output_path":
                         output_path_name = arg_value
                         continue
-            if attr_name in ["outgroups", "additional-species", "input-species"]:
+            if attr_name in ["outgroups", "additional_species", "input_species"]:
                 arg_value = [
-                    utils.curate_labels(item) 
+                    utils.curate_labels(item.strip()) 
                     for item in arg_value.strip().split(",")
+                    if len(item) != 0
+                ]
+
+            if "," in str(arg_value):
+                arg_value = [
+                    item.strip() for item in arg_value.strip().split(",") if len(item) != 0
                 ]
 
             # need further action
@@ -147,7 +153,7 @@ def handle_missing_path_args(manager: Manager, output_path_name: str, prefix: st
     if not hasattr(manager.options, "input_path"):
         input_path_exist = False
         arg_dict = read_args_from_json(task, "--input")
-        input_path = THIS_DIR / arg_dict["default"]
+        input_path = CWD / arg_dict["default"]
         setattr(manager.options, "input_path", input_path.resolve())
 
     output_path_isdir = False
@@ -155,7 +161,7 @@ def handle_missing_path_args(manager: Manager, output_path_name: str, prefix: st
     if not hasattr(manager.options, "output_path"):
         if not input_path_exist:
             arg_dict = read_args_from_json(task, "--output")
-            default_dir = THIS_DIR / arg_dict["default"]
+            default_dir = CWD / arg_dict["default"]
             output_path = default_dir.resolve() / manager.options.input_path.name
             output_path_isdir = True
 
@@ -186,12 +192,12 @@ def handle_missing_path_args(manager: Manager, output_path_name: str, prefix: st
         if not input_path_exist \
             or manager.options.input_path.parent.name == "OrthoBench":
             arg_dict = read_args_from_json(task, "--database")
-            database_path = THIS_DIR / arg_dict["default"]
+            database_path = CWD / arg_dict["default"]
             setattr(manager.options, "database_path", database_path.resolve())
 
     if task == "benchmark":
         if not hasattr(manager.options, "refog_path"):
             if manager.options.input_path.parent.name == "OrthoBench":
                 arg_dict = read_args_from_json(task, "--refog")
-                refog_path = THIS_DIR / arg_dict["default"]
+                refog_path = CWD / arg_dict["default"]
                 setattr(manager.options, "refog_path", refog_path.resolve())

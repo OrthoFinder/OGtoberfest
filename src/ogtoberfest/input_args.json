@@ -6,7 +6,7 @@
                 "--input"
             ],
             "name": "input_path",
-            "default": "../../OrthoBench/predicted_orthogroups",
+            "default": "./OrthoBench/predicted_orthogroups",
             "action": "",
             "description": "A file of directory containing the original predicted orthogroup file(s)",
             "help": "",
@@ -21,7 +21,7 @@
                 "--output"
             ],
             "name": "output_path",
-            "default": "../../OrthoBench",
+            "default": "./OrthoBench",
             "action": "",
             "description": "A file of directory containing the format regulated predicted orthogroup file(s)",
             "help": "",
@@ -36,7 +36,7 @@
                 "--database"
             ],
             "name": "databse_path",
-            "default": "../../OrthoBench/proteomes_gene_labels",
+            "default": "./OrthoBench/proteomes_gene_labels",
             "action": "",
             "description": "A directory containing the fasta files",
             "help": "",
@@ -53,7 +53,7 @@
                 "--input"
             ],
             "name": "input_path",
-            "default": "../../OrthoBench/preprocessed_predicted_orthogroups",
+            "default": "./OrthoBench/preprocessed_predicted_orthogroups",
             "action": "",
             "description": "File containing reference orthogroups",
             "help": "",
@@ -68,7 +68,7 @@
                 "--output"
             ],
             "name": "output_path",
-            "default": "../../OrthoBench",
+            "default": "./OrthoBench",
             "action": "",
             "description": "Directory containing score files",
             "help": "",
@@ -83,7 +83,7 @@
                 "--database"
             ],
             "name": "databse_path",
-            "default": "../../OrthoBench/proteomes_gene_labels",
+            "default": "./OrthoBench/proteomes_gene_labels",
             "action": "",
             "description": "A directory containing the fasta files",
             "help": "",
@@ -98,7 +98,7 @@
                 "--refog"
             ],
             "name": "refog_path",
-            "default": "../../OrthoBench/reference_orthogroups.tsv",
+            "default": "./OrthoBench/reference_orthogroups.tsv",
             "action": "",
             "description": "A file containing the reference Orthogroups",
             "help": "",
@@ -131,7 +131,7 @@
                 "-as",
                 "--additional-species"
             ],
-            "name": "additional-species",
+            "name": "additional_species",
             "default": [
                 "Branchiostoma_lanceolatum",
                 "Schistosoma_mansoni"
@@ -143,6 +143,37 @@
             "valid_options": "",
             "error_message": "",
             "category": "public"
+        },
+        {
+            "flag": [
+                "-as",
+                "--input-species"
+            ],
+            "name": "input_species",
+            "default": "",
+            "action": "",
+            "description": "Selected species for analysis",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-ags",
+                "--add-global-score"
+            ],
+            "name": "additional_global_scores",
+            "default": "",
+            "action": "",
+            "description": "Add additional global score",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
         }
+
     ]
 }

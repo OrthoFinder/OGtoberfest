@@ -2,14 +2,13 @@ import argparse
 import os
 import pathlib
 import re
-
+from typing import Optional
 from ete3 import Tree
 
 
 def hieranoid(input_file, output_file, protemes_dir: pathlib.Path):
 
     species_gene_dict = {}
-    print(protemes_dir)
     for file in protemes_dir.iterdir():
         species = file.name.split(".", 1)[0]
         with open(file, "r") as reader:
@@ -27,10 +26,11 @@ def hieranoid(input_file, output_file, protemes_dir: pathlib.Path):
                 ogs = set()
                 for node in t.traverse("postorder"):
                     if node.is_leaf():
-                        # gene_name = node.name
-                        # species_name = [species for species, genes in species_gene_dict.items() if gene_name in genes]
-                        # ogs.add(node.name)
-                        ogs.add(species_gene_dict[node.name] + "." + node.name)
+                        species = species_gene_dict.get(node.name)
+                        if species is not None:
+                            ogs.add(species + "." + node.name)
+                        else:
+                            ogs.add(node.name)
 
                 og = og_name + ": " + ", ".join(ogs)
                 writer.write(og + "\n")
@@ -64,9 +64,9 @@ def orthofinder(input_file, output_file):
     old_version = True
     with open(output_file, "w") as writer:
         with open(input_file, "r") as reader:
-            for i, line in enumerate(reader):
+            for n, line in enumerate(reader):
                 line = line.strip()
-                if i == 0:
+                if n == 0:
                     if "Gene Tree Parent Clade" in line:
                         species_list = [
                             item.split(".", 1)[0] for item in line.split("\t", 3)[-1].split()
@@ -108,10 +108,12 @@ def orthofinder(input_file, output_file):
 def sonicparanoid(input_file, output_file):
     with open(output_file, "w") as writer:
         with open(input_file, "r") as reader:
-            for i, line in enumerate(reader):
+            for n, line in enumerate(reader):
                 line = line.strip()
-                if i == 0:
-                    species_list = [item.split(".", 1)[0] for item in line.split("\t", 1)[1].split()]
+                if n == 0:
+                    species_list = [
+                        item.split(".", 1)[0] for item in line.split("\t", 1)[1].split()
+                    ]
                 else:
                     predog_key, genes_str = line.split("\t", 1)
                     genes_list = genes_str.split("\t")
@@ -135,12 +137,13 @@ def sonicparanoid(input_file, output_file):
                     writer.write(og + "\n")
 
 
-def broccoli(input_file, output_file):
+def broccoli_v1(input_file, output_file):
+
     with open(output_file, "w") as writer:
         with open(input_file, "r") as reader:
-            for i, line in enumerate(reader):
+            for n, line in enumerate(reader):
                 line = line.strip()
-                if i == 0:
+                if n == 0:
                     species_list = [
                         item.split(".", 1)[0] for item in line.split("\t", 1)[1].split()
                     ]
@@ -166,3 +169,49 @@ def broccoli(input_file, output_file):
                     og = predog_key + ": " + ", ".join(genes)
                     writer.write(og + "\n")
 
+def broccoli_v2(input_file, output_file, protemes_dir: pathlib.Path):
+    species_gene_dict = {}
+
+    for file in protemes_dir.iterdir():
+        species = file.name.split(".", 1)[0]
+        with open(file, "r") as reader:
+            for line in reader:
+                if ">" in line:
+                    gene = line[1:].strip().split(".", 1)[-1]
+                    species_gene_dict[gene] = species
+
+    with open(output_file, "w") as writer:
+        with open(input_file, "r") as reader:
+            for i, line in enumerate(reader):
+                line = line.strip()
+                if i == 0:
+                    continue
+
+                predog_key, genes_str = line.split("\t", 1)
+                genes_list = genes_str.split()
+                genes = []
+                for gene in genes_list:
+                    if len(gene) == 0:
+                        continue
+                    species = species_gene_dict.get(gene)
+                    if species is not None:
+                        genes.append(species + "." + gene)
+                    else:
+                        genes.appenbd(gene)
+                og = predog_key + ": " + ", ".join(genes)
+                writer.write(og + "\n")
+
+def broccoli(input_file, output_file, protemes_dir: Optional[pathlib.Path] = None,):
+
+    with open(input_file) as f:
+        header = f.readline().strip('\n')
+
+    if "protein_names" in header:
+        if protemes_dir is not None:
+            broccoli_v2(input_file, output_file, protemes_dir)
+        else:
+            print(f"{input_file.name} requires species information,"
+                  " please provide the path for the database!")
+            return 
+    else:
+        broccoli_v1(input_file, output_file)

@@ -17,7 +17,7 @@ def preprocess_file(
     ):
     if method_func_name is not None:
         method_func = funcs_dict[method_func_name]
-        if method_func_name == "hieranoid":
+        if method_func_name in ["hieranoid", "broccoli"]:
             method_func(
                 file,
                 manager.options.output_path / file.name,
@@ -236,6 +236,7 @@ def main(args: Optional[List[str]] = None):
         funcs_dict = utils.get_func_name(preprocess)
         if manager.options.input_path.is_dir():
             for file in manager.options.input_path.iterdir():
+                print(f"Preprocessing {file}")
                 method = re.split("_|\.", file.name)[0]
                 method = method.lower()
                 method_func_name = method_name_maps.get(method)
