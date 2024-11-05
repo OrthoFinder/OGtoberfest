@@ -89,7 +89,7 @@ def local_scores(
 
 
 def get_scores(ref_ogs, pred_ogs):
-    
+
     V_prime = sf.V_raw_to_V_prime(ref_ogs, pred_ogs)
     V = sf.V_prime_to_V(V_prime)
 
@@ -106,59 +106,61 @@ def get_scores(ref_ogs, pred_ogs):
     print()
 
     # print(os.path.basename(ogs_filename))
-    gene_pair_TP, gene_pair_FP, gene_pair_FN, \
-    gene_pair_recall, gene_pair_precision, gene_pair_f1score = sf.calculate_benchmarks_pairwise(ref_ogs, 
-                                                                                            pred_ogs, 
-                                                                                            ref_ogs_uncertain)
+    # gene_pair_TP, gene_pair_FP, gene_pair_FN, \
+    # gene_pair_recall, gene_pair_precision, gene_pair_f1score = \
+    # sf.calculate_benchmarks_pairwise(ref_ogs,
+    #                                 pred_ogs,
+    #                                 ref_ogs_uncertain)
 
-    print("%d  Correct gene pairs" % gene_pair_TP)
-    print("%d  False Positives gene pairs" % gene_pair_FP)
-    print("%d  False Negatives gene pairs\n" % gene_pair_FN)
+    # print("%d  Correct gene pairs" % gene_pair_TP)
+    # print("%d  False Positives gene pairs" % gene_pair_FP)
+    # print("%d  False Negatives gene pairs\n" % gene_pair_FN)
 
-    print("%0.1f%%  Gene Pair Recall" % (100. * gene_pair_recall))
-    print("%0.1f%%  Gene Pair Precision" % (100. * gene_pair_precision))
-    print("%0.1f%%  Gene Pair F1-score\n" % (100. * gene_pair_f1score))    
+    # print("%0.1f%%  Gene Pair Recall" % (100. * gene_pair_recall))
+    # print("%0.1f%%  Gene Pair Precision" % (100. * gene_pair_precision))
+    # print("%0.1f%%  Gene Pair F1-score\n" % (100. * gene_pair_f1score))
 
     missing_predogs_list = sf.missing_predogs(V_prime)
-    print("%0.1f%%  Missing PrefOGs" % (100. * len(missing_predogs_list) / len(ref_ogs)))
+    missing_predogs = len(missing_predogs_list) / len(ref_ogs)
+    print("%0.1f%%  Missing PrefOGs" % (100. * missing_predogs))
 
     total_missing_genes, total_missing_genes_set, \
     missing_genes_dict, missing_genes_count_dict, \
     missing_genes_proportion_dict = sf.check_missing_genes(ref_ogs, V_prime)
-
-    print("%0.1f%%  Missing Genes" % (100. * total_missing_genes / N))
+    missing_genes = total_missing_genes / N
+    print("%0.1f%%  Missing Genes" % (100.0 * missing_genes))
 
     fussion_refog_set, fussion_predog_dict = sf.fussion(V_prime, V)
-    fussion_refog_score = 100. * len(fussion_refog_set) / len(ref_ogs)
+    fussion_refog_score = len(fussion_refog_set) / len(ref_ogs)
     if len(V) != 0:
         fussion_predog_score = 100. * len(fussion_predog_dict) / len(V)
     else:
         fussion_predog_score = 0.0
-    print("%0.1f%%  Fussion (RefOG)" % fussion_refog_score)
-    print("%0.1f%%  Fussion (PredOG)" % fussion_predog_score)
+    print("%0.1f%%  Fussion (RefOG)" % (100.0 * fussion_refog_score))
+    # print("%0.1f%%  Fussion (PredOG)" % fussion_predog_score)
 
     fission_refog_set, fission_predog_set = sf.fission(ref_ogs, V_prime)
-    fission_refog_score = 100. * len(fission_refog_set) / len(ref_ogs)
+    fission_refog_score = len(fission_refog_set) / len(ref_ogs)
     if len(V) != 0:
         fission_predog_score = 100. * len(fission_predog_set) / len(V)
     else:
         fission_predog_score = 0.0
-    print("%0.1f%%  Fission (RefOG)" % fission_refog_score)
-    print("%0.1f%%  Fission (PredOG)" % fission_predog_score)
-    print()
+    print("%0.1f%%  Fission (RefOG)" % (100.0 * fission_refog_score))
+    # print("%0.1f%%  Fission (PredOG)" % fission_predog_score)
+    # print()
 
-    micro_recall, micro_precision, \
-    micro_f1score, micro_fowlkes_mallows_index, \
-    micro_jaccard_index, micro_dissimilarity, micro_distance = sf.micro_scores(ref_ogs, V_prime, N)
+    # micro_recall, micro_precision, \
+    # micro_f1score, micro_fowlkes_mallows_index, \
+    # micro_jaccard_index, micro_dissimilarity, micro_distance = sf.micro_scores(ref_ogs, V_prime, N)
 
-    print("%0.1f%%  micro Recall" % (100. * micro_recall))
-    print("%0.1f%%  micro Precision" % (100. * micro_precision))
-    print("%0.1f%%  micro F1-score" % (100. * micro_f1score))
-    print("%0.1f%%  micro Fowlkes Mallows Index" % (100. * micro_fowlkes_mallows_index))
-    print("%0.1f%%  micro Jaccard Index" % (100. * micro_jaccard_index))
-    print("%0.1f%%  micro Disimilarity" % (100. * micro_dissimilarity))
-    print("%0.2f   micro Distance" % (micro_distance))
-    print()
+    # print("%0.1f%%  micro Recall" % (100. * micro_recall))
+    # print("%0.1f%%  micro Precision" % (100. * micro_precision))
+    # print("%0.1f%%  micro F1-score" % (100. * micro_f1score))
+    # print("%0.1f%%  micro Fowlkes Mallows Index" % (100. * micro_fowlkes_mallows_index))
+    # print("%0.1f%%  micro Jaccard Index" % (100. * micro_jaccard_index))
+    # print("%0.1f%%  micro Disimilarity" % (100. * micro_dissimilarity))
+    # print("%0.2f   micro Distance" % (micro_distance))
+    # print()
 
     total_weighted_recall, macro_recall, weighted_recall_dict, \
     total_weighted_precision, macro_precision, weighted_precision_dict, \
@@ -174,36 +176,48 @@ def get_scores(ref_ogs, pred_ogs):
     effective_size_JI_weighted_dict, \
     effective_size_JI_refog_weighted_dict = sf.macro_and_weighted_avg_scores(ref_ogs, V_prime, N)
 
-    print("%0.1f%%  macro Recall" % (100. * macro_recall))
-    print("%0.1f%%  macro Precision" % (100. * macro_precision))
-    print("%0.1f%%  macro F1-score" % (100. * macro_f1score))
-    print("%0.1f%%  macro Fowlkes Mallows Index" % (100. * macro_fowlkes_mallows))
-    print("%0.1f%%  macro Jaccard Index" % (100. * macro_JI))
-    print("%0.1f%%  macro Disimilarity" % (100. * macro_dissimilarity))
-    print("%0.2f   macro Distance" % (macro_distance))
-    print("%0.2f   macro Disimilarity Distance" % (macro_dissimilarity_distance))
-    print()
+    # print("%0.1f%%  macro Recall" % (100. * macro_recall))
+    # print("%0.1f%%  macro Precision" % (100. * macro_precision))
+    # print("%0.1f%%  macro F1-score" % (100. * macro_f1score))
+    # print("%0.1f%%  macro Fowlkes Mallows Index" % (100. * macro_fowlkes_mallows))
+    # print("%0.1f%%  macro Jaccard Index" % (100. * macro_JI))
+    # print("%0.1f%%  macro Disimilarity" % (100. * macro_dissimilarity))
+    # print("%0.2f   macro Distance" % (macro_distance))
+    # print("%0.2f   macro Disimilarity Distance" % (macro_dissimilarity_distance))
+    # print()
 
     print("%0.1f%%  Weighted Avg Recall" % (100. * total_weighted_recall))
     print("%0.1f%%  Weighted Avg Precision" % (100. * total_weighted_precision))
     print("%0.1f%%  Weighted Avg F1-score" % (100. * total_weighted_f1score))
-    print("%0.1f%%  Weighted Avg Fowlkes Mallows Index" % (100. * total_weighted_fowlkes_mallows))
-    print("%0.1f%%  Weighted Avg Jaccard Index" % (100. * total_weighted_JI))
-    print("%0.1f%%  Weighted Avg Disimilarity" % (100. * total_weighted_dissimilarity))
-    print("%0.2f   Weighted Avg Distance" % (total_weighted_distance))
-    print()
+    # print("%0.1f%%  Weighted Avg Fowlkes Mallows Index" % (100. * total_weighted_fowlkes_mallows))
+    # print("%0.1f%%  Weighted Avg Jaccard Index" % (100. * total_weighted_JI))
+    # print("%0.1f%%  Weighted Avg Disimilarity" % (100. * total_weighted_dissimilarity))
+    # print("%0.2f   Weighted Avg Distance" % (total_weighted_distance))
+    # print()
 
     total_entropy, entropy_dict = sf.entropy_score(ref_ogs, V_prime, N)
     print("%0.2f  Entropy" % (total_entropy))
 
-    precision_weighted_KLD = sf.kl_divergence(ref_ogs, effective_size_precision_weighted_dict, N, M)
-    JI_weighted_KLD = sf.kl_divergence(ref_ogs, effective_size_JI_weighted_dict, N, M)
-    JI_refog_weighted_KLD = sf.kl_divergence(ref_ogs, effective_size_JI_refog_weighted_dict, N, M)
+    # precision_weighted_KLD = sf.kl_divergence(ref_ogs, effective_size_precision_weighted_dict, N, M)
+    # JI_weighted_KLD = sf.kl_divergence(ref_ogs, effective_size_JI_weighted_dict, N, M)
+    # JI_refog_weighted_KLD = sf.kl_divergence(ref_ogs, effective_size_JI_refog_weighted_dict, N, M)
 
-    print("%0.2f  Precision Weighted KLD" % (precision_weighted_KLD))
-    print("%0.2f  Jaccard Index Weighted KLD" % (JI_weighted_KLD))
-    print("%0.2f  Jaccard Index refOG Weighted KLD" % (JI_refog_weighted_KLD))
+    # print("%0.2f  Precision Weighted KLD" % (precision_weighted_KLD))
+    # print("%0.2f  Jaccard Index Weighted KLD" % (JI_weighted_KLD))
+    # print("%0.2f  Jaccard Index refOG Weighted KLD" % (JI_refog_weighted_KLD))
     print()
+
+    num_decimal = 1
+    scores = [
+        np.round(100.0 * missing_predogs, num_decimal),
+        np.round(100.0 * missing_genes, num_decimal),
+        np.round(100.0 * fussion_refog_score, num_decimal),
+        np.round(100.0 * fission_refog_score, num_decimal),
+        np.round(100.0 * total_weighted_recall, num_decimal),
+        np.round(100.0 * total_weighted_precision, num_decimal),
+        np.round(total_entropy, 2),
+    ]
+    return scores
 
 
 def main(args: Optional[List[str]] = None):
@@ -216,6 +230,7 @@ def main(args: Optional[List[str]] = None):
     task = args.pop(0)
 
     manager = process_args.create_options(args, task=task)
+    filewriter = files.FileWriter(manager.options.output_path)
     method_name_maps = utils.get_func_name_map()
     if task == "preprocess":
         funcs_dict = utils.get_func_name(preprocess)
@@ -264,6 +279,7 @@ def main(args: Optional[List[str]] = None):
             refogs_dict = ogreader.read_orthobench_refogs()
             predogs_dict = {}
             if manager.options.input_path.is_dir():
+                global_scores_dict = {}
                 for file in manager.options.input_path.iterdir():
                     print("\nReading predicted orthogroups from: %s" % file.name)
                     method = re.split("_|\.", file.name)[0]
@@ -273,8 +289,16 @@ def main(args: Optional[List[str]] = None):
                         file
                     )
 
-                opa.check_orthobench_orthogroups(predogs_dict[method_func_name], exp_genes)
+                    opa.check_orthobench_orthogroups(predogs_dict[method_func_name], exp_genes)
 
+                    global_scores = get_scores(refogs_dict, predogs_dict[method_func_name])
+                    global_scores_dict[file.name.rsplit(".", 1)[0]] = global_scores
+
+                    print("*" * 50)
+                global_score_filename = manager.options.input_path.parent.name + "_global_scores.tsv"
+                filewriter.save_global_scores(
+                    global_score_filename, global_scores_dict
+                )
             elif manager.options.input_path.is_file():
                 print("\nReading predicted orthogroups from: %s" % manager.options.input_path.name)
                 method = re.split("_|\.", manager.options.input_path.name)[0]

@@ -2,7 +2,7 @@ import pathlib
 import os 
 import re
 import sys
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any 
 
 
 class OGReader:
@@ -68,3 +68,31 @@ class OGReader:
                         og_label = l.split(None, 1)[0]
                     ogs[og_label] = set(genes)
         return ogs
+
+
+class FileWriter:
+
+    def __init__(self, output_path):
+        self.output_path = output_path
+
+    def save_global_scores(self, filename: str, scores_dict: Dict[str, Any]):
+
+        colnames = [
+            "Methods",
+            "Missing PredOGs",
+            "Missing Genes",
+            "Fussion (RefOG)",
+            "Fission (RefOG)",
+            "Weighted Avg Recall",
+            "Weighted Avg Precision",
+            "Entropy",
+        ]
+        colnames_str = "\t".join(colnames)
+        score_filename = self.output_path / filename 
+        with open(score_filename, "w") as writer:
+            writer.write(colnames_str + "\n")
+            for method, scores in scores_dict.items():
+                scores_str_list = [str(s) for s in scores]
+                scores_str = "\t".join(scores_str_list)
+                line = "\t".join((method, scores_str))
+                writer.write(line + "\n")

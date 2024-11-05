@@ -165,4 +165,5 @@ cython_debug/
 OrthoBench/proteomes
 OrthoBench/preprocessed_*
 OrthoBench/predicted_*
+OrthoBench/scores_*
 .pre-commit-config.yaml
