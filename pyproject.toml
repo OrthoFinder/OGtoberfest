@@ -74,6 +74,7 @@ where = ["src"]
 include = ["ogtoberfest*"]
 
 [tool.setuptools.package-data]
+"ogtoberfest" = ["*.json"]
 "ExampleData" = ["*"]
 
 
