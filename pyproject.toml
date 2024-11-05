@@ -75,7 +75,8 @@ include = ["ogtoberfest*"]
 
 [tool.setuptools.package-data]
 "ogtoberfest" = ["*.json"]
-"ExampleData" = ["*"]
+"OrthoBench" = ["*.tsv"]
+"OrthoBench.proteomes_gene_labels" = ["*"]
 
 
 [tool.setuptools.exclude-package-data]
