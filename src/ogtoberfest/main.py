@@ -122,20 +122,33 @@ def general_stats(ref_ogs: Dict[str, Set[str]],
     return general_stats_dict, refog_species_dict, predog_species_dict
 
 
-def combine_scores(scores_list, score_names, avg_method = "mean"):
+def combine_scores(scores_list, score_names, avg_method = "rms"):
 
     score_dict = dict(zip(score_names, scores_list))
+    if avg_method == "mean":
+        combined_scores = 0.0
+        for name, score in score_dict.items():
+            if "recall" in name.lower() or "precision" in name.lower():
+                combined_scores += score / 100
+            elif "entropy" in name.lower():
+                combined_scores += 1 - score
+            else:
+                combined_scores += 1 - score / 100
 
-    combined_scores = 0.0
-    for name, score in score_dict.items():
-        if "recall" in name.lower() or "precision" in name.lower():
-            combined_scores += score / 100
-        elif "entropy" in name.lower():
-            combined_scores += 1 - score
-        else:
-            combined_scores += 1 - score / 100
+        combined_scores /= len(scores_list)
 
-    combined_scores /= len(scores_list)
+    elif avg_method == "rms":
+        combined_scores = 0.0
+        for name, score in score_dict.items():
+            if "recall" in name.lower() or "precision" in name.lower():
+                combined_scores += (score / 100)**2
+            elif "entropy" in name.lower():
+                combined_scores += (1 - score)**2
+            else:
+                combined_scores += (1 - score / 100)**2
+
+        combined_scores /= len(scores_list)
+        combined_scores = np.sqrt(combined_scores)
     return combined_scores
 
 
