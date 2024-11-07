@@ -4,6 +4,7 @@ import re
 import pathlib
 import numpy as np
 import pandas as pd
+import scipy.stats as ss
 
 from ogtoberfest import preprocess, process_args, utils, files
 from ogtoberfest import orthogroups_analyser as opa
@@ -150,6 +151,33 @@ def combine_scores(scores_list, score_names, avg_method = "rms"):
         combined_scores /= len(scores_list)
         combined_scores = np.sqrt(combined_scores)
     return combined_scores
+
+def rand_score(global_score_dict, score_names):
+    method, scores = zip(*global_score_dict.items())
+    filtered_score = []
+    for score in scores:
+        score_dict = dict(zip(score_names, score[:-1]))
+        score_list = []
+        for name, score in score_dict.items():
+            if "recall" in name.lower() or "precision" in name.lower():
+                score_list.append(score / 100)
+            elif "entropy" in name.lower():
+                score_list.append(1 - score)
+            else:
+                score_list.append(1 - score / 100)
+
+        filtered_score.append(score_list)
+
+    score_arr = np.array(filtered_score)
+    rank_arr = ss.rankdata(score_arr, method="min", axis=0)
+
+    mean_rank = np.mean(rank_arr, axis=1).round(2)
+    for i, score in enumerate(scores):
+        score.append(mean_rank[i])
+
+    ranked_global_score_dict = dict(zip(method, scores))
+    global_scores_rank_dict = dict(zip(method, rank_arr))
+    return ranked_global_score_dict, global_scores_rank_dict
 
 
 def get_scores(ref_ogs: Dict[str, Set[str]], 
@@ -411,15 +439,25 @@ def main(args: Optional[List[str]] = None):
                         global_additional_scores,
                         )
                     combined_score = combine_scores(global_scores, global_score_colnames[1:-1])
-                    
+
                     global_scores.append(np.round(combined_score, 3))
                     global_scores_dict[file.name.rsplit(".", 1)[0]] = global_scores
 
                     print("*" * 50)
-
+                ranked_global_scores_dict, global_scores_rank_dict = rand_score(
+                    global_scores_dict, global_score_colnames[1:-1]
+                )
+                global_score_colnames.append("Avg Rank Score")
                 global_score_filename = manager.options.input_path.parent.name + "_global_scores.tsv"
                 filewriter.save_global_scores(
-                    global_score_colnames, global_score_filename, global_scores_dict
+                    global_score_colnames, global_score_filename, ranked_global_scores_dict
+                )
+
+                global_score_rank_filename = (
+                    manager.options.input_path.parent.name + "_global_scores_rank.tsv"
+                )
+                filewriter.save_global_scores(
+                    global_score_colnames[:-2], global_score_rank_filename, global_scores_rank_dict
                 )
             elif manager.options.input_path.is_file():
                 print("\nReading predicted orthogroups from: %s" % manager.options.input_path.name)
