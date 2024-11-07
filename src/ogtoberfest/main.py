@@ -88,7 +88,8 @@ def local_scores(
     return df
 
 
-def get_scores(ref_ogs, pred_ogs):
+def general_stats(ref_ogs: Dict[str, Set[str]], 
+                  pred_ogs: Dict[str, Set[str]]):
 
     V_prime = sf.V_raw_to_V_prime(ref_ogs, pred_ogs)
     V = sf.V_prime_to_V(V_prime)
@@ -97,12 +98,92 @@ def get_scores(ref_ogs, pred_ogs):
     M = np.sum([len(predog) for predog in V.values()])
     M_raw = np.sum([len(predog) for predog in pred_ogs.values()])
 
+    refog_species_dict = opa.get_refog_species_dict(ref_ogs)
+    predog_species_dict = opa.get_predog_species_dict(V_prime)
+
     print("\nCalculating benchmarks:")
     print("%d  Number of RefOGs" % len(ref_ogs))
     print("%d  Number of genes in RefOGs" % N)
     print("%d  Number of PredOGs" % len(pred_ogs))
     print("%d  Number of genes in PredOGs (overlap)" % M)
     print("%d  Number of genes in PredOGs" % M_raw)
+    print()
+
+    general_stats_dict = {
+        "nrefogs": len(ref_ogs),
+        "n_genes_refogs": N,
+        # "n_species_refogs": ,
+        "npredogs": len(pred_ogs),
+        # "n_species_predogs": 
+        "n_overlaped_genes_predogs": M,
+        "n_genes_predogs": M_raw
+    }
+
+    return general_stats_dict, refog_species_dict, predog_species_dict
+
+
+def combine_scores(scores_list, score_names, avg_method = "mean"):
+
+    score_dict = dict(zip(score_names, scores_list))
+
+    combined_scores = 0.0
+    for name, score in score_dict.items():
+        if "recall" in name.lower() or "precision" in name.lower():
+            combined_scores += score / 100
+        elif "entropy" in name.lower():
+            combined_scores += 1 - score
+        else:
+            combined_scores += 1 - score / 100
+
+    combined_scores /= len(scores_list)
+    return combined_scores
+
+
+def get_scores(ref_ogs: Dict[str, Set[str]], 
+               pred_ogs: Dict[str, Set[str]],  
+               global_additional_scores: Optional[List[str]] = None,
+               local_additional_scores: Optional[List[str]] = None,
+               ) -> List[float]:
+
+    V_prime = sf.V_raw_to_V_prime(ref_ogs, pred_ogs)
+    V = sf.V_prime_to_V(V_prime)
+
+    N = np.sum([len(refog) for refog in ref_ogs.values()])
+    M = np.sum([len(predog) for predog in V.values()])
+    M_raw = np.sum([len(predog) for predog in pred_ogs.values()])
+
+    refog_species_dict = opa.get_species_dict(ref_ogs)
+    predog_species_dict_raw = opa.get_species_dict(pred_ogs)
+    predog_species_dict_overlap = opa.get_species_dict(V)
+    predog_species_dict_prime = opa.get_predog_species_dict(V_prime)
+    #
+    num_species_refog_dict = opa.get_num_species_dict(refog_species_dict)
+    num_species_predog_dict_raw = opa.get_num_species_dict(predog_species_dict_raw)
+    num_species_predog_dict_overlap = opa.get_num_species_dict(predog_species_dict_overlap)
+    num_species_predog_dict_prime = opa.get_predog_num_species_dict(predog_species_dict_prime)
+
+    total_num_species_refog = \
+        len(set(utils.flatten_list_of_list([*refog_species_dict.values()])))
+
+    total_num_species_predog_raw = len(
+        set(utils.flatten_list_of_list([*predog_species_dict_raw.values()]))
+    )
+
+    total_num_species_predog_overlap = \
+        len(
+        set(utils.flatten_list_of_list([*predog_species_dict_overlap.values()]))
+    )
+
+    print("\nCalculating benchmarks:")
+    print("%d  Number of RefOGs" % len(ref_ogs))
+    print("%d  Number of species in RefOGs" % total_num_species_refog)
+    print("%d  Number of genes in RefOGs" % N)
+    print("%d  Number of PredOGs" % len(pred_ogs))
+    print("%d  Number of species in PredOGs" % total_num_species_predog_raw)
+    print("%d  Number of genes in PredOGs" % M_raw)
+    print("%d  Number of species in PredOGs (overlap)" % total_num_species_predog_overlap)
+    print("%d  Number of genes in PredOGs (overlap)" % M)
+
     print()
 
     # print(os.path.basename(ogs_filename))
@@ -217,6 +298,8 @@ def get_scores(ref_ogs, pred_ogs):
         np.round(100.0 * total_weighted_precision, num_decimal),
         np.round(total_entropy, 2),
     ]
+
+    # if isinstance(global_additional_scores, list):
     return scores
 
 
@@ -269,6 +352,23 @@ def main(args: Optional[List[str]] = None):
             )
 
     elif task == "benchmark":
+
+        global_score_colnames = [
+            "Methods",
+            "Missing PredOGs",
+            "Missing Genes",
+            "Fussion (RefOG)",
+            "Fission (RefOG)",
+            "Weighted Avg Recall",
+            "Weighted Avg Precision",
+            "Entropy",
+            "Combined scores"
+        ]
+
+        global_additional_scores = None
+        if hasattr(manager.options, "additional_global_scores"):
+            global_additional_scores = manager.options.additional_global_scores
+
         ogreader = files.OGReader(manager.options.refog_path)
         if "OrthoBench" in manager.options.input_path.parent.name:
             print("\nReading RefOGs from: %s" % manager.options.refog_path)
@@ -292,13 +392,21 @@ def main(args: Optional[List[str]] = None):
 
                     opa.check_orthobench_orthogroups(predogs_dict[method_func_name], exp_genes)
 
-                    global_scores = get_scores(refogs_dict, predogs_dict[method_func_name])
+                    global_scores = get_scores(
+                        refogs_dict, 
+                        predogs_dict[method_func_name],
+                        global_additional_scores,
+                        )
+                    combined_score = combine_scores(global_scores, global_score_colnames[1:-1])
+                    
+                    global_scores.append(np.round(combined_score, 3))
                     global_scores_dict[file.name.rsplit(".", 1)[0]] = global_scores
 
                     print("*" * 50)
+
                 global_score_filename = manager.options.input_path.parent.name + "_global_scores.tsv"
                 filewriter.save_global_scores(
-                    global_score_filename, global_scores_dict
+                    global_score_colnames, global_score_filename, global_scores_dict
                 )
             elif manager.options.input_path.is_file():
                 print("\nReading predicted orthogroups from: %s" % manager.options.input_path.name)

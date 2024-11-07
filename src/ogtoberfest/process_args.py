@@ -1,8 +1,9 @@
+from __future__ import annotations
 import json
 import os
 import pathlib
-from typing import Any, Dict, List, Literal, Optional, Tuple
-
+from typing import Any, Dict, List, Literal, Optional, Tuple, TypedDict
+from dataclasses import dataclass
 from ogtoberfest import utils
 
 CMD_MANAGER: Literal["preprocess", "benchmark"] = "preprocess"
@@ -12,14 +13,19 @@ ARGS_JSON_PATH = THIS_DIR / "./input_args.json"
 
 CWD = pathlib.Path.cwd()
 
-class Manager:
-    def __init__(self, task: CMD_MANAGER):
-        self.task = task
-        self.options = Options()
+# class Manager:
+#     def __init__(self, task: CMD_MANAGER):
+#         self.task = task
+#         self.options = Options()
 
-    def __repr__(self):
-        attributes_dict = {"task": self.task}
-        return f"Manager({attributes_dict})"
+#     def __repr__(self):
+#         attributes_dict = {"task": self.task}
+#         return f"Manager({attributes_dict})"
+
+@dataclass
+class Manager:
+    task: str
+    options: Options
 
 class Options:
     def __init__(self):
@@ -61,7 +67,15 @@ class Options:
 
 
 def create_options(args: List[str], task=CMD_MANAGER) -> Manager:
-    manager = Manager(task)
+    # manager = Manager(task)
+    manager = Manager (
+        **{
+        "task": task,
+        "options": Options()
+        }
+    )
+    # manager = Manager(task, Options())
+
     output_path_name = ""
     show_args = False
     while args:
@@ -70,7 +84,7 @@ def create_options(args: List[str], task=CMD_MANAGER) -> Manager:
         if arg == "--show-args":
             show_args = True
 
-        arg_dict = read_args_from_json(task, arg)  # Presumed function to fetch argument info from JSON
+        arg_dict = read_args_from_json(task, arg)
 
         if arg_dict is not None:
             if not args:

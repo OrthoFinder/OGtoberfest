@@ -75,18 +75,11 @@ class FileWriter:
     def __init__(self, output_path):
         self.output_path = output_path
 
-    def save_global_scores(self, filename: str, scores_dict: Dict[str, Any]):
+    def save_global_scores(self, 
+                           colnames: List[str], 
+                           filename: str, 
+                           scores_dict: Dict[str, Any]):
 
-        colnames = [
-            "Methods",
-            "Missing PredOGs",
-            "Missing Genes",
-            "Fussion (RefOG)",
-            "Fission (RefOG)",
-            "Weighted Avg Recall",
-            "Weighted Avg Precision",
-            "Entropy",
-        ]
         colnames_str = "\t".join(colnames)
         score_filename = self.output_path / filename 
         with open(score_filename, "w") as writer:

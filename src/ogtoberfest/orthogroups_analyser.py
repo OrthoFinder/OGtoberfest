@@ -5,6 +5,41 @@ from typing import Optional, List, Set, Tuple, Dict
 from ogtoberfest import utils
 
 
+def get_num_species_dict(species_dict):
+
+    num_species_dict = {
+        og_key: len(og_species)
+        for og_key, og_species in species_dict.items()
+    }
+    return num_species_dict
+
+def get_predog_num_species_dict(predog_species_dict):
+
+    num_species_predog_dict = {
+        refog_key: {predog_key: len(predog_species) for predog_key, predog_species in predogs.items()}
+        for refog_key, predogs in predog_species_dict.items()
+    }
+    return num_species_predog_dict
+
+def get_species_dict(ogs_dict):
+
+    species_dict = {
+        og_key: set([og.split(".", 1)[0] for og in ogs]) for og_key, ogs in ogs_dict.items()
+    }
+    return species_dict
+
+def get_predog_species_dict(predogs_reformated):
+
+    predog_species_dict = {
+        refog_key: {
+            predog_key: set([og.split(".", 1)[0] for og in predog])
+            for predog_key, predog in predogs.items()
+        }
+        for refog_key, predogs in predogs_reformated.items()
+    }
+    return predog_species_dict
+
+
 def get_expected_genes(
         input_dir: pathlib.Path,
         outgroups: Optional[List[str]] = None,

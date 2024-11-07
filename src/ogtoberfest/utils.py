@@ -112,3 +112,10 @@ def get_func_name_map():
         "orthomcl": "orthomcl",
     }
     return func_name
+
+
+def flatten_list_of_list(alist: List[List[str]]):
+    flat_list = []
+    for row in alist:
+        flat_list += row
+    return flat_list

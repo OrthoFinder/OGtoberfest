@@ -170,7 +170,7 @@
             "description": "Add additional global score",
             "help": "",
             "limit": "",
-            "valid_options": "",
+            "valid_options": ["f1-score", "fowlkes-mallows"],
             "error_message": "",
             "category": "public"
         }
