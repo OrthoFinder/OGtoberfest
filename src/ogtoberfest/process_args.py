@@ -75,7 +75,7 @@ def create_options(args: List[str], task=CMD_MANAGER) -> Manager:
         }
     )
     # manager = Manager(task, Options())
-
+    args_list = read_args_from_json(task)
     output_path_name = ""
     show_args = False
     while args:
@@ -84,8 +84,7 @@ def create_options(args: List[str], task=CMD_MANAGER) -> Manager:
         if arg == "--show-args":
             show_args = True
 
-        arg_dict = read_args_from_json(task, arg)
-
+        arg_dict = read_args_from_arg_list(args_list, arg)
         if arg_dict is not None:
             if not args:
                 print(f"Missing option for argument {arg}")
@@ -134,15 +133,19 @@ def create_options(args: List[str], task=CMD_MANAGER) -> Manager:
     else:
         prefix = "scores"
 
-    handle_missing_path_args(manager, output_path_name, prefix, task)
+    handle_missing_path_args(manager, output_path_name, prefix, args_list, task)
 
     if manager.options.input_path.parent.name == "OrthoBench" and task == "benchmark":
         if not hasattr(manager.options, "outgroups"):
-            arg_dict = read_args_from_json(task, "--outgroups")
+            arg_dict = read_args_from_arg_list(args_list, "--outgroups")
             manager.options.outgroups = arg_dict["default"]
         if not hasattr(manager.options, "additional_species"):
-            arg_dict = read_args_from_json(task, "--additional-species")
+            arg_dict = read_args_from_arg_list(args_list, "--additional-species")
             manager.options.additional_species = arg_dict["default"]
+        
+        if not hasattr(manager.options, "rank_method"):
+            arg_dict = read_args_from_arg_list(args_list, "--rank-method")
+            manager.options.rank_method = arg_dict["default"]
 
     if show_args:
         print("Here is your input arguments:")
@@ -152,21 +155,31 @@ def create_options(args: List[str], task=CMD_MANAGER) -> Manager:
     return manager
 
 
-def read_args_from_json(task=CMD_MANAGER, flag: str = "") -> Optional[Dict[str, str]]:
+def read_args_from_json(task=CMD_MANAGER):
     args_contents = ARGS_JSON_PATH.read_text()
     args_list = json.loads(args_contents)[task]
+    return args_list
+
+
+def read_args_from_arg_list(args_list, flag: str) -> Optional[Dict[str, str]]:
     for arg_dict in args_list:
         if flag in arg_dict["flag"]:
             return arg_dict
     return
 
 
-def handle_missing_path_args(manager: Manager, output_path_name: str, prefix: str, task=CMD_MANAGER,):
+def handle_missing_path_args(
+    manager: Manager,
+    output_path_name: str,
+    prefix: str,
+    args_list,
+    task,
+):
 
     input_path_exist = True
     if not hasattr(manager.options, "input_path"):
         input_path_exist = False
-        arg_dict = read_args_from_json(task, "--input")
+        arg_dict = read_args_from_arg_list(args_list, "--input")
         input_path = CWD / arg_dict["default"]
         setattr(manager.options, "input_path", input_path.resolve())
 
@@ -174,7 +187,7 @@ def handle_missing_path_args(manager: Manager, output_path_name: str, prefix: st
     output_path: Optional[pathlib.Path] = None
     if not hasattr(manager.options, "output_path"):
         if not input_path_exist:
-            arg_dict = read_args_from_json(task, "--output")
+            arg_dict = read_args_from_arg_list(args_list, "--output")
             default_dir = CWD / arg_dict["default"]
             output_path = default_dir.resolve() / manager.options.input_path.name
             output_path_isdir = True
@@ -205,13 +218,13 @@ def handle_missing_path_args(manager: Manager, output_path_name: str, prefix: st
     if not hasattr(manager.options, "database_path"):
         if not input_path_exist \
             or manager.options.input_path.parent.name == "OrthoBench":
-            arg_dict = read_args_from_json(task, "--database")
+            arg_dict = read_args_from_arg_list(args_list, "--database")
             database_path = CWD / arg_dict["default"]
             setattr(manager.options, "database_path", database_path.resolve())
 
     if task == "benchmark":
         if not hasattr(manager.options, "refog_path"):
             if manager.options.input_path.parent.name == "OrthoBench":
-                arg_dict = read_args_from_json(task, "--refog")
+                arg_dict = read_args_from_arg_list(args_list, "--refog")
                 refog_path = CWD / arg_dict["default"]
                 setattr(manager.options, "refog_path", refog_path.resolve())

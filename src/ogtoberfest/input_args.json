@@ -173,6 +173,25 @@
             "valid_options": ["f1-score", "fowlkes-mallows"],
             "error_message": "",
             "category": "public"
+        },
+        {
+            "flag": [
+                "--rank-method"
+            ],
+            "name": "rank_method",
+            "default": "min",
+            "action": "",
+            "description": "Assign ranks to scores, dealing with ties appropriately",
+            "help": "",
+            "limit": "",
+            "valid_options": [
+                "average",
+                "min",
+                "max",
+                "dense"
+            ],
+            "error_message": "",
+            "category": "public"
         }
 
     ]

@@ -152,7 +152,7 @@ def combine_scores(scores_list, score_names, avg_method = "rms"):
         combined_scores = np.sqrt(combined_scores)
     return combined_scores
 
-def rand_score(global_score_dict, score_names):
+def rand_score(global_score_dict, score_names, rank_method="min"):
     method, scores = zip(*global_score_dict.items())
     filtered_score = []
     for score in scores:
@@ -160,16 +160,16 @@ def rand_score(global_score_dict, score_names):
         score_list = []
         for name, score in score_dict.items():
             if "recall" in name.lower() or "precision" in name.lower():
-                score_list.append(score / 100)
-            elif "entropy" in name.lower():
-                score_list.append(1 - score)
-            else:
                 score_list.append(1 - score / 100)
+            elif "entropy" in name.lower():
+                score_list.append(score)
+            else:
+                score_list.append(score / 100)
 
         filtered_score.append(score_list)
 
     score_arr = np.array(filtered_score)
-    rank_arr = ss.rankdata(score_arr, method="min", axis=0)
+    rank_arr = ss.rankdata(score_arr, method=rank_method, axis=0)
 
     mean_rank = np.mean(rank_arr, axis=1).round(2)
     for i, score in enumerate(scores):
@@ -445,7 +445,7 @@ def main(args: Optional[List[str]] = None):
 
                     print("*" * 50)
                 ranked_global_scores_dict, global_scores_rank_dict = rand_score(
-                    global_scores_dict, global_score_colnames[1:-1]
+                    global_scores_dict, global_score_colnames[1:-1], rank_method=manager.options.rank_method
                 )
                 global_score_colnames.append("Avg Rank Score")
                 global_score_filename = manager.options.input_path.parent.name + "_global_scores.tsv"
