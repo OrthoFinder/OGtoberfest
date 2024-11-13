@@ -327,3 +327,61 @@ def get_scores(
 
     # if isinstance(global_additional_scores, list):
     return global_stats_dict, local_stats_dict, global_score_dict, local_score_dict, predogs_info
+
+
+def local_scores(
+        ref_ogs,
+        V_prime,
+        weighted_recall_dict,
+        weighted_precision_dict,
+        weighted_f1score_dict,
+        entropy_dict,
+        missing_genes_dict,
+        missing_genes_count_dict,
+        missing_genes_proportion_dict,
+        effective_size_precision_weighted_dict,
+        effective_size_JI_weighted_dict,
+    ):
+
+    round_precision = 1
+    data_dict = [
+        (
+            refog_key,
+            len(refog),
+            len(V_prime[refog_key]),
+            np.round(100.0 * weighted_recall_dict[refog_key], round_precision),
+            np.round(100.0 * weighted_precision_dict[refog_key], round_precision),
+            np.round(100.0 * weighted_f1score_dict[refog_key], round_precision),
+            np.round(entropy_dict[refog_key], 2),
+            missing_genes_count_dict[refog_key],
+            np.round(100.0 * missing_genes_proportion_dict[refog_key], round_precision),
+            int(effective_size_precision_weighted_dict[refog_key]),
+            int(effective_size_JI_weighted_dict[refog_key]),
+            missing_genes_dict[refog_key],
+        )
+        for refog_key, refog in ref_ogs.items()
+    ]
+
+    colnames = [
+        "RefOGs",
+        "RefOG_Size",
+        "nPredictedOGs",
+        "avg_Recall (%)",
+        "avg_Precision (%)",
+        "avg_F1-score (%)",
+        "Entropy",
+        "TotalMissingGenes",
+        "MissingGenes (%)",
+        "EffectiveSize (JI_weighted)",
+        "Missing_Genes",
+    ]
+
+    df = pd.DataFrame.from_records(data_dict, columns=colnames)
+    # print(matched_df[["RefOG_intersection_PredOG", "min_FN", "FP"]])
+    df.sort_values(
+        by=["avg_Recall (%)", "avg_Precision (%)", "Entropy"],
+        inplace=True,
+        ascending=[False, False, True],
+    )
+
+    return df

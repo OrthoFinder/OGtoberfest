@@ -4,11 +4,12 @@ import re
 import pathlib
 import numpy as np
 import pandas as pd
-import scipy.stats as ss
+
 
 from ogtoberfest import preprocess, process_args, utils, files
 from ogtoberfest import orthogroups_analyser as opa
 from ogtoberfest import scorefuncs as sf
+from ogtoberfest import score_analyser as sa
 
 def preprocess_file(
         manager: process_args.Manager,
@@ -88,262 +89,6 @@ def local_scores(
 
     return df
 
-
-def general_stats(ref_ogs: Dict[str, Set[str]], 
-                  pred_ogs: Dict[str, Set[str]]):
-
-    V_prime = sf.V_raw_to_V_prime(ref_ogs, pred_ogs)
-    V = sf.V_prime_to_V(V_prime)
-
-    N = np.sum([len(refog) for refog in ref_ogs.values()])
-    M = np.sum([len(predog) for predog in V.values()])
-    M_raw = np.sum([len(predog) for predog in pred_ogs.values()])
-
-    refog_species_dict = opa.get_refog_species_dict(ref_ogs)
-    predog_species_dict = opa.get_predog_species_dict(V_prime)
-
-    print("\nCalculating benchmarks:")
-    print("%d  Number of RefOGs" % len(ref_ogs))
-    print("%d  Number of genes in RefOGs" % N)
-    print("%d  Number of PredOGs" % len(pred_ogs))
-    print("%d  Number of genes in PredOGs (overlap)" % M)
-    print("%d  Number of genes in PredOGs" % M_raw)
-    print()
-
-    general_stats_dict = {
-        "nrefogs": len(ref_ogs),
-        "n_genes_refogs": N,
-        # "n_species_refogs": ,
-        "npredogs": len(pred_ogs),
-        # "n_species_predogs": 
-        "n_overlaped_genes_predogs": M,
-        "n_genes_predogs": M_raw
-    }
-
-    return general_stats_dict, refog_species_dict, predog_species_dict
-
-
-def combine_scores(scores_list, score_names, avg_method = "rms"):
-
-    score_dict = dict(zip(score_names, scores_list))
-    if avg_method == "mean":
-        combined_scores = 0.0
-        for name, score in score_dict.items():
-            if "recall" in name.lower() or "precision" in name.lower():
-                combined_scores += score / 100
-            elif "entropy" in name.lower():
-                combined_scores += 1 - score
-            else:
-                combined_scores += 1 - score / 100
-
-        combined_scores /= len(scores_list)
-
-    elif avg_method == "rms":
-        combined_scores = 0.0
-        for name, score in score_dict.items():
-            if "recall" in name.lower() or "precision" in name.lower():
-                combined_scores += (score / 100)**2
-            elif "entropy" in name.lower():
-                combined_scores += (1 - score)**2
-            else:
-                combined_scores += (1 - score / 100)**2
-
-        combined_scores /= len(scores_list)
-        combined_scores = np.sqrt(combined_scores)
-    return combined_scores
-
-def rand_score(global_score_dict, score_names, rank_method="min"):
-    method, scores = zip(*global_score_dict.items())
-    filtered_score = []
-    for score in scores:
-        score_dict = dict(zip(score_names, score[:-1]))
-        score_list = []
-        for name, score in score_dict.items():
-            if "recall" in name.lower() or "precision" in name.lower():
-                score_list.append(1 - score / 100)
-            elif "entropy" in name.lower():
-                score_list.append(score)
-            else:
-                score_list.append(score / 100)
-
-        filtered_score.append(score_list)
-
-    score_arr = np.array(filtered_score)
-    rank_arr = ss.rankdata(score_arr, method=rank_method, axis=0)
-
-    mean_rank = np.mean(rank_arr, axis=1).round(2)
-    for i, score in enumerate(scores):
-        score.append(mean_rank[i])
-
-    ranked_global_score_dict = dict(zip(method, scores))
-    global_scores_rank_dict = dict(zip(method, rank_arr))
-    return ranked_global_score_dict, global_scores_rank_dict
-
-
-def get_scores(ref_ogs: Dict[str, Set[str]], 
-               pred_ogs: Dict[str, Set[str]],  
-               global_additional_scores: Optional[List[str]] = None,
-               local_additional_scores: Optional[List[str]] = None,
-               ) -> List[float]:
-
-    V_prime = sf.V_raw_to_V_prime(ref_ogs, pred_ogs)
-    V = sf.V_prime_to_V(V_prime)
-
-    N = np.sum([len(refog) for refog in ref_ogs.values()])
-    M = np.sum([len(predog) for predog in V.values()])
-    M_raw = np.sum([len(predog) for predog in pred_ogs.values()])
-
-    refog_species_dict = opa.get_species_dict(ref_ogs)
-    predog_species_dict_raw = opa.get_species_dict(pred_ogs)
-    predog_species_dict_overlap = opa.get_species_dict(V)
-    predog_species_dict_prime = opa.get_predog_species_dict(V_prime)
-    #
-    num_species_refog_dict = opa.get_num_species_dict(refog_species_dict)
-    num_species_predog_dict_raw = opa.get_num_species_dict(predog_species_dict_raw)
-    num_species_predog_dict_overlap = opa.get_num_species_dict(predog_species_dict_overlap)
-    num_species_predog_dict_prime = opa.get_predog_num_species_dict(predog_species_dict_prime)
-
-    total_num_species_refog = \
-        len(set(utils.flatten_list_of_list([*refog_species_dict.values()])))
-
-    total_num_species_predog_raw = len(
-        set(utils.flatten_list_of_list([*predog_species_dict_raw.values()]))
-    )
-
-    total_num_species_predog_overlap = \
-        len(
-        set(utils.flatten_list_of_list([*predog_species_dict_overlap.values()]))
-    )
-
-    print("\nCalculating benchmarks:")
-    print("%d  Number of RefOGs" % len(ref_ogs))
-    print("%d  Number of species in RefOGs" % total_num_species_refog)
-    print("%d  Number of genes in RefOGs" % N)
-    print("%d  Number of PredOGs" % len(pred_ogs))
-    print("%d  Number of species in PredOGs" % total_num_species_predog_raw)
-    print("%d  Number of genes in PredOGs" % M_raw)
-    print("%d  Number of species in PredOGs (overlap)" % total_num_species_predog_overlap)
-    print("%d  Number of genes in PredOGs (overlap)" % M)
-
-    print()
-
-    # print(os.path.basename(ogs_filename))
-    # gene_pair_TP, gene_pair_FP, gene_pair_FN, \
-    # gene_pair_recall, gene_pair_precision, gene_pair_f1score = \
-    # sf.calculate_benchmarks_pairwise(ref_ogs,
-    #                                 pred_ogs,
-    #                                 ref_ogs_uncertain)
-
-    # print("%d  Correct gene pairs" % gene_pair_TP)
-    # print("%d  False Positives gene pairs" % gene_pair_FP)
-    # print("%d  False Negatives gene pairs\n" % gene_pair_FN)
-
-    # print("%0.1f%%  Gene Pair Recall" % (100. * gene_pair_recall))
-    # print("%0.1f%%  Gene Pair Precision" % (100. * gene_pair_precision))
-    # print("%0.1f%%  Gene Pair F1-score\n" % (100. * gene_pair_f1score))
-
-    missing_predogs_list = sf.missing_predogs(V_prime)
-    missing_predogs = len(missing_predogs_list) / len(ref_ogs)
-    print("%0.1f%%  Missing PrefOGs" % (100. * missing_predogs))
-
-    total_missing_genes, total_missing_genes_set, \
-    missing_genes_dict, missing_genes_count_dict, \
-    missing_genes_proportion_dict = sf.check_missing_genes(ref_ogs, V_prime)
-    missing_genes = total_missing_genes / N
-    print("%0.1f%%  Missing Genes" % (100.0 * missing_genes))
-
-    fussion_refog_set, fussion_predog_dict = sf.fussion(V_prime, V)
-    fussion_refog_score = len(fussion_refog_set) / len(ref_ogs)
-    if len(V) != 0:
-        fussion_predog_score = 100. * len(fussion_predog_dict) / len(V)
-    else:
-        fussion_predog_score = 0.0
-    print("%0.1f%%  Fussion (RefOG)" % (100.0 * fussion_refog_score))
-    # print("%0.1f%%  Fussion (PredOG)" % fussion_predog_score)
-
-    fission_refog_set, fission_predog_set = sf.fission(ref_ogs, V_prime)
-    fission_refog_score = len(fission_refog_set) / len(ref_ogs)
-    if len(V) != 0:
-        fission_predog_score = 100. * len(fission_predog_set) / len(V)
-    else:
-        fission_predog_score = 0.0
-    print("%0.1f%%  Fission (RefOG)" % (100.0 * fission_refog_score))
-    # print("%0.1f%%  Fission (PredOG)" % fission_predog_score)
-    # print()
-
-    # micro_recall, micro_precision, \
-    # micro_f1score, micro_fowlkes_mallows_index, \
-    # micro_jaccard_index, micro_dissimilarity, micro_distance = sf.micro_scores(ref_ogs, V_prime, N)
-
-    # print("%0.1f%%  micro Recall" % (100. * micro_recall))
-    # print("%0.1f%%  micro Precision" % (100. * micro_precision))
-    # print("%0.1f%%  micro F1-score" % (100. * micro_f1score))
-    # print("%0.1f%%  micro Fowlkes Mallows Index" % (100. * micro_fowlkes_mallows_index))
-    # print("%0.1f%%  micro Jaccard Index" % (100. * micro_jaccard_index))
-    # print("%0.1f%%  micro Disimilarity" % (100. * micro_dissimilarity))
-    # print("%0.2f   micro Distance" % (micro_distance))
-    # print()
-
-    total_weighted_recall, macro_recall, weighted_recall_dict, \
-    total_weighted_precision, macro_precision, weighted_precision_dict, \
-    total_weighted_f1score, macro_f1score, weighted_f1score_dict, \
-    total_weighted_fowlkes_mallows, macro_fowlkes_mallows, weighted_fowlkes_mallows_dict, \
-    total_weighted_JI, macro_JI, weighted_JI_dict,  \
-    total_weighted_dissimilarity, macro_dissimilarity, weighted_dissimilarity_dict, \
-    total_weighted_distance, macro_distance, weighted_distance_dict, \
-    macro_dissimilarity_distance, \
-    all_score_dict, \
-    all_TP_dict, \
-    effective_size_precision_weighted_dict, \
-    effective_size_JI_weighted_dict, \
-    effective_size_JI_refog_weighted_dict = sf.macro_and_weighted_avg_scores(ref_ogs, V_prime, N)
-
-    # print("%0.1f%%  macro Recall" % (100. * macro_recall))
-    # print("%0.1f%%  macro Precision" % (100. * macro_precision))
-    # print("%0.1f%%  macro F1-score" % (100. * macro_f1score))
-    # print("%0.1f%%  macro Fowlkes Mallows Index" % (100. * macro_fowlkes_mallows))
-    # print("%0.1f%%  macro Jaccard Index" % (100. * macro_JI))
-    # print("%0.1f%%  macro Disimilarity" % (100. * macro_dissimilarity))
-    # print("%0.2f   macro Distance" % (macro_distance))
-    # print("%0.2f   macro Disimilarity Distance" % (macro_dissimilarity_distance))
-    # print()
-
-    print("%0.1f%%  Weighted Avg Recall" % (100. * total_weighted_recall))
-    print("%0.1f%%  Weighted Avg Precision" % (100. * total_weighted_precision))
-    print("%0.1f%%  Weighted Avg F1-score" % (100. * total_weighted_f1score))
-    # print("%0.1f%%  Weighted Avg Fowlkes Mallows Index" % (100. * total_weighted_fowlkes_mallows))
-    # print("%0.1f%%  Weighted Avg Jaccard Index" % (100. * total_weighted_JI))
-    # print("%0.1f%%  Weighted Avg Disimilarity" % (100. * total_weighted_dissimilarity))
-    # print("%0.2f   Weighted Avg Distance" % (total_weighted_distance))
-    # print()
-
-    total_entropy, entropy_dict = sf.entropy_score(ref_ogs, V_prime, N)
-    print("%0.2f  Entropy" % (total_entropy))
-
-    # precision_weighted_KLD = sf.kl_divergence(ref_ogs, effective_size_precision_weighted_dict, N, M)
-    # JI_weighted_KLD = sf.kl_divergence(ref_ogs, effective_size_JI_weighted_dict, N, M)
-    # JI_refog_weighted_KLD = sf.kl_divergence(ref_ogs, effective_size_JI_refog_weighted_dict, N, M)
-
-    # print("%0.2f  Precision Weighted KLD" % (precision_weighted_KLD))
-    # print("%0.2f  Jaccard Index Weighted KLD" % (JI_weighted_KLD))
-    # print("%0.2f  Jaccard Index refOG Weighted KLD" % (JI_refog_weighted_KLD))
-    print()
-
-    num_decimal = 1
-    scores = [
-        np.round(100.0 * missing_predogs, num_decimal),
-        np.round(100.0 * missing_genes, num_decimal),
-        np.round(100.0 * fussion_refog_score, num_decimal),
-        np.round(100.0 * fission_refog_score, num_decimal),
-        np.round(100.0 * total_weighted_recall, num_decimal),
-        np.round(100.0 * total_weighted_precision, num_decimal),
-        np.round(total_entropy, 2),
-    ]
-
-    # if isinstance(global_additional_scores, list):
-    return scores
-
-
 def main(args: Optional[List[str]] = None):
 
     if not args:
@@ -394,23 +139,16 @@ def main(args: Optional[List[str]] = None):
 
     elif task == "benchmark":
 
-        global_score_colnames = [
-            "Methods",
-            "Missing PredOGs",
-            "Missing Genes",
-            "Fussion (RefOG)",
-            "Fission (RefOG)",
-            "Weighted Avg Recall",
-            "Weighted Avg Precision",
-            "Entropy",
-            "Combined scores"
-        ]
+        if len(manager.options.additional_global_scores) != 0:
+            if isinstance(manager.options.additional_global_scores, str):
+                manager.options.global_scores.append(manager.options.additional_global_scores)
+            elif isinstance(manager.options.additional_global_scores, list):
+                manager.options.global_scores.extend(manager.options.additional_global_scores)
+        
+        global_score_colnames = ["Methods"] \
+            + manager.options.global_scores \
+            + [manager.options.combined_global_score] 
 
-        global_additional_scores = None
-        if hasattr(manager.options, "additional_global_scores"):
-            global_additional_scores = manager.options.additional_global_scores
-
-        ogreader = files.OGReader(manager.options.refog_path)
         if "OrthoBench" in manager.options.input_path.parent.name:
             print("\nReading RefOGs from: %s" % manager.options.refog_path)
             exp_genes = opa.get_expected_genes(
@@ -418,7 +156,10 @@ def main(args: Optional[List[str]] = None):
                     manager.options.outgroups,
                     manager.options.additional_species,
                 )
+            ogreader = files.OrthoBenchOGReader(manager.options.refog_path, 
+                                      manager.options.uncertian_refog_path)
             refogs_dict = ogreader.read_orthobench_refogs()
+            # uncertain_refogs_dict = ogreader.read_uncertain_orthobench_refogs()
             predogs_dict = {}
             if manager.options.input_path.is_dir():
                 global_scores_dict = {}
@@ -433,21 +174,34 @@ def main(args: Optional[List[str]] = None):
 
                     opa.check_orthobench_orthogroups(predogs_dict[method_func_name], exp_genes)
 
-                    global_scores = get_scores(
-                        refogs_dict, 
+                    global_stats_dict, local_stats_dict, global_score_dict, local_score_dict, predogs_info = sa.get_scores(
+                        refogs_dict,
                         predogs_dict[method_func_name],
-                        global_additional_scores,
-                        )
-                    combined_score = combine_scores(global_scores, global_score_colnames[1:-1])
+                        manager.options.precision,
+                    )
+                    
+                    global_scores = [
+                        score for score_name, score in global_score_dict.items()
+                        if score_name in manager.options.global_scores
+                    ]
 
-                    global_scores.append(np.round(combined_score, 3))
+                    if manager.options.combined_global_score == "Simple Avg Score":
+                        combined_score = sa.combine_scores(global_scores, 
+                                                           global_score_colnames[1:-1], 
+                                                           precision=manager.options.precision,)
+                        global_scores.append(np.round(combined_score, 3))
+
                     global_scores_dict[file.name.rsplit(".", 1)[0]] = global_scores
 
                     print("*" * 50)
-                ranked_global_scores_dict, global_scores_rank_dict = rand_score(
-                    global_scores_dict, global_score_colnames[1:-1], rank_method=manager.options.rank_method
-                )
-                global_score_colnames.append("Avg Rank Score")
+                if manager.options.combined_global_score == "Avg Rank Score":
+                    ranked_global_scores_dict, global_scores_rank_dict = sa.rand_score(
+                        global_scores_dict, 
+                        global_score_colnames[1:-1], 
+                        precision=manager.options.precision, 
+                        rank_method=manager.options.rank_method
+                    )
+
                 global_score_filename = manager.options.input_path.parent.name + "_global_scores.tsv"
                 filewriter.save_global_scores(
                     global_score_colnames, global_score_filename, ranked_global_scores_dict
@@ -457,7 +211,7 @@ def main(args: Optional[List[str]] = None):
                     manager.options.input_path.parent.name + "_global_scores_rank.tsv"
                 )
                 filewriter.save_global_scores(
-                    global_score_colnames[:-2], global_score_rank_filename, global_scores_rank_dict
+                    global_score_colnames[:-1], global_score_rank_filename, global_scores_rank_dict
                 )
             elif manager.options.input_path.is_file():
                 print("\nReading predicted orthogroups from: %s" % manager.options.input_path.name)

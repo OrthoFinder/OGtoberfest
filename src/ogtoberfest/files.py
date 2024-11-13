@@ -2,15 +2,16 @@ import pathlib
 import os 
 import re
 import sys
-from typing import Optional, List, Dict, Any 
+from typing import Optional, List, Dict, Any, Set
 
 
-class OGReader:
+class OrthoBenchOGReader:
 
-    def __init__(self, refog_path):
+    def __init__(self, refog_path, uncerain_refog_path):
         self.refog_path = refog_path
+        self.uncertain_refog_path = uncerain_refog_path
 
-    def read_orthobench_refogs(self) -> Dict[str, str]:
+    def read_orthobench_refogs(self) -> Dict[str, Set[str]]:
         n_expected = 1945
         n_genes = 0
         refogs = {}
@@ -38,6 +39,20 @@ class OGReader:
             )
 
         return refogs
+
+    def read_uncertain_orthobench_refogs(self) -> Dict[str, Set[str]]:
+        uncertain_refogs = {}
+
+        with open(self.uncertain_refog_path, "r") as reader:
+            for line in reader:
+                if "Orthogroups" in line:
+                    continue
+                line = line.strip().split("\t")
+                refog_key, genes = line[0], line[-1]
+                genes = [g.strip() for g in genes.split(", ") if g.strip() != ""]
+                uncertain_refogs[refog_key] = set(genes)
+
+        return uncertain_refogs
 
     def read_orthobench_predogs(self, predog_path):
         ogs = {}

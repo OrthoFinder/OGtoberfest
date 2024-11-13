@@ -18,7 +18,7 @@ def curate_labels(label: str):
     return label
 
 
-def check_cmd_args(args: List[str]):
+def check_cmd_args(args: List[str]) -> List[str]:
 
     if (not args or len(args) == 0) \
         or (args[0] == "--help" or args[0] == "help" or args[0] == "-h"):
@@ -55,7 +55,7 @@ def check_cmd_args(args: List[str]):
     return args
 
 
-def print_help(task: Optional[CMD_MANAGER] = None):
+def print_help(task=Optional[CMD_MANAGER]):
 
     print("Thank you for using OGtoberfest!")
     pass
@@ -104,6 +104,7 @@ def get_func_name_map():
         "sonicparanoid": "sonicparanoid",
         "sonicparanoid2": "sonicparanoid",
         "sp2": "sonicparanoid",
+        "sonic": "sonicparanoid",
         "broccoli": "broccoli",
         "broc": "broccoli",
         "hier": "hieranoid",

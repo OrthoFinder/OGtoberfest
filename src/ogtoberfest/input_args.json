@@ -82,7 +82,7 @@
                 "-D",
                 "--database"
             ],
-            "name": "databse_path",
+            "name": "database_path",
             "default": "./OrthoBench/proteomes_gene_labels",
             "action": "",
             "description": "A directory containing the fasta files",
@@ -101,6 +101,21 @@
             "default": "./OrthoBench/reference_orthogroups.tsv",
             "action": "",
             "description": "A file containing the reference Orthogroups",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-urog",
+                "--uncertian-refog"
+            ],
+            "name": "uncertian_refog_path",
+            "default": "./OrthoBench/reference_orthogroups_uncertain.tsv",
+            "action": "",
+            "description": "A file containing the uncertian reference Orthogroups",
             "help": "",
             "limit": "",
             "valid_options": "",
@@ -170,8 +185,30 @@
             "description": "Add additional global score",
             "help": "",
             "limit": "",
-            "valid_options": ["f1-score", "fowlkes-mallows"],
-            "error_message": "",
+            "valid_options": [
+                "Fusion (PredOGs)",
+                "Fision (PredOGs)",
+                "Weighted Avg F1-score",
+                "Weighted Avg Fowlkes-Mallows Index",
+                "Weighted Avg Jaccard Index",
+                "Weighted Avg Disimilarity",
+                "Micro Recall",
+                "Micro Precision",
+                "Micro F1-score", 
+                "Micro Fowlkes-Mallows Index",
+                "Micro Jaccard Index",
+                "Micro Disimilarity",
+                "Macro Recall",
+                "Macro Precision",
+                "Macro F1-score",
+                "Macro Fowlkes-Mallows Index",
+                "Macro Jaccard Index",
+                "Macro Disimilarity",
+                "Gene Pair Recall",
+                "Gene Pair Precision",
+                "Gene Pair F1-score"          
+            ],
+            "error_message": "Unsuppoted input global scores",
             "category": "public"
         },
         {
@@ -192,7 +229,59 @@
             ],
             "error_message": "",
             "category": "public"
+        },
+        {
+            "flag": [
+                "-gs",
+                "--global-scores"
+            ],
+            "name": "global_scores",
+            "default": [
+                "Missing PredOGs",
+                "Missing Genes",
+                "Fusion (RefOGs)",
+                "Fision (RefOGs)",
+                "Weighted Avg Recall",
+                "Weighted Avg Precision",
+                "Avg Entropy"
+            ],
+            "action": "",
+            "description": "Global scores for benchmarking",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-cgs",
+                "--combined-global-score"
+            ],
+            "name": "combined_global_score",
+            "default": "Avg Rank Score",
+            "action": "",
+            "description": "Combined Global scores for benchmarking",
+            "help": "",
+            "limit": "",
+            "valid_options": ["Avg Rank Score", "Simple Avg Score"],
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-p",
+                "--precision"
+            ],
+            "name": "precision",
+            "default": 3,
+            "action": "",
+            "description": "decimal points",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
         }
-
     ]
 }

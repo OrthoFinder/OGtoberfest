@@ -5,7 +5,7 @@ import numpy as np
 from scipy.special import comb, gammaln
 from scipy.stats import expon
 from sklearn.metrics import cluster
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
 
 
 def sparse_contingency_table_count(U, V, n):
@@ -305,11 +305,11 @@ def kl_divergence(P, Q, n, m):
     return kld
 
 
-def check_missing_genes(U, V_prime):
+def check_missing_genes(U, V_prime, num_round):
 
     missing_genes_dict = {}
     missing_genes_count_dict = {}
-    missing_genes_proportion_dict = {}
+    missing_genes_per_dict = {}
     total_missing_genes_set = set()
     for refog_key, refog in U.items():
         predog_set = set()
@@ -322,11 +322,11 @@ def check_missing_genes(U, V_prime):
             total_missing_genes_set = total_missing_genes_set.union(FN)
             missing_genes_dict[refog_key] = FN
             missing_genes_count_dict[refog_key] = len(FN)
-            missing_genes_proportion_dict[refog_key] = len(FN) / nrefog
+            missing_genes_per_dict[refog_key] = np.round(100. * len(FN) / nrefog, num_round)
         else:
             missing_genes_dict[refog_key] = set()
             missing_genes_count_dict[refog_key] = 0
-            missing_genes_proportion_dict[refog_key] = 0.0
+            missing_genes_per_dict[refog_key] = 0.0
 
     total_missing_genes = len(total_missing_genes_set)
 
@@ -335,7 +335,7 @@ def check_missing_genes(U, V_prime):
         total_missing_genes_set,
         missing_genes_dict,
         missing_genes_count_dict,
-        missing_genes_proportion_dict,
+        missing_genes_per_dict,
     )
 
 
@@ -414,7 +414,7 @@ def entropy_score(U, V_prime, n):
     return total_entropy, entropy_dict
 
 
-def macro_and_weighted_avg_scores(U, V_prime, n):
+def macro_and_weighted_avg_scores(U, V_prime, n, num_round):
 
     weighted_recall_dict = {}
     weighted_precision_dict = {}
@@ -486,12 +486,12 @@ def macro_and_weighted_avg_scores(U, V_prime, n):
                     predog_key,
                     str(npredog),
                     str(overlap),
-                    str(np.round(100 * recall, 2)),
-                    str(np.round(100 * precision, 2)),
-                    str(np.round(100 * fm, 2)),
-                    str(np.round(100 * ji, 2)),
-                    str(np.round(100 * dissimalrity, 2)),
-                    str(np.round(distance, 2)),
+                    str(np.round(100 * recall, num_round)),
+                    str(np.round(100 * precision, num_round)),
+                    str(np.round(100 * fm, num_round)),
+                    str(np.round(100 * ji, num_round)),
+                    str(np.round(100 * dissimalrity, num_round)),
+                    str(np.round(distance, num_round)),
                 )
                 for predog_key, npredog, overlap, recall, precision, fm, ji, dissimalrity, distance in zip(
                     predog_keys,
@@ -716,34 +716,34 @@ def micro_scores(U, V_prime, n):
     )
 
 
-def fussion(V_prime, V):
-    fussion_predog_dict = {}
-    fussion_refog_set = set()
+def fusion(V_prime, V):
+    fusion_predog_dict = {}
+    fusion_refog_set = set()
     for predog_key in V:
         refog_key_set = set([refog_key for refog_key, predog_dict in V_prime.items() if predog_key in predog_dict])
         if len(refog_key_set) > 1:
-            fussion_predog_dict[predog_key] = refog_key_set
-            fussion_refog_set = fussion_refog_set.union(refog_key_set)
-    return fussion_refog_set, fussion_predog_dict
+            fusion_predog_dict[predog_key] = refog_key_set
+            fusion_refog_set = fusion_refog_set.union(refog_key_set)
+    return fusion_refog_set, fusion_predog_dict
 
 
-def fission(U, V_prime):
-    fission_predog_set = set()
-    fission_refog_set = set()
+def fision(U, V_prime):
+    fision_predog_set = set()
+    fision_refog_set = set()
     for refog_key in U:
         if len(V_prime[refog_key]) > 1:
-            fission_refog_set.add(refog_key)
-            fission_predog_set = fission_predog_set.union(set([*V_prime[refog_key].keys()]))
+            fision_refog_set.add(refog_key)
+            fision_predog_set = fision_predog_set.union(set([*V_prime[refog_key].keys()]))
 
-    return fission_refog_set, fission_predog_set
+    return fision_refog_set, fision_predog_set
 
 
 def calculate_benchmarks_pairwise(
-        ref_ogs: Dict[str, str],
-        pred_ogs: Dict[str, str],
-        uncert_genes: Optional[Dict] = None,
+        ref_ogs: Dict[str, Set[str]],
+        pred_ogs: Dict[str, Set[str]],
+        # uncert_genes: Optional[Dict] = None,
         q_even: bool = True,
-        q_remove_uncertain: bool = True,
+        # q_remove_uncertain: bool = True,
     ):
     referenceOGs = ref_ogs
     predictedOGs = pred_ogs
@@ -759,15 +759,15 @@ def calculate_benchmarks_pairwise(
 
     for refog_key in referenceOGs:
         refOg = referenceOGs[refog_key]
-        if uncert_genes is not None:
-            uncert = uncert_genes[refog_key]
+        # if uncert_genes is not None:
+        #     uncert = uncert_genes[refog_key]
 
         thisFP = 0.0
         thisFN = 0.0
         thisTP = 0.0
         this_split = 0
-        if q_remove_uncertain and uncert_genes is not None:
-            refOg = refOg.difference(uncert)
+        # if q_remove_uncertain and uncert_genes is not None:
+        #     refOg = refOg.difference(uncert)
 
         nRefOG = len(refOg)
         totalGenes += nRefOG
@@ -781,10 +781,10 @@ def calculate_benchmarks_pairwise(
             intersection += overlap
 
             if overlap > 0:
-                if q_remove_uncertain and uncert_genes is not None:
-                    predOg = predOg.difference(
-                        uncert
-                    )  # I.e. only discount genes that are uncertain w.r.t. this RefOG
+                # if q_remove_uncertain and uncert_genes is not None:
+                #     predOg = predOg.difference(
+                #         uncert
+                #     )  # I.e. only discount genes that are uncertain w.r.t. this RefOG
                 overlap = len(refOg.intersection(predOg))
 
             if overlap > 0:
@@ -888,11 +888,11 @@ if __name__ == "__main__":
 
     print("%0.1f%%  Missing Genes (%%)" % (100.0 * total_missing_genes / N))
 
-    fussion_refog_set, fussion_predog_dict = fussion(V_prime, V)
-    fussion_refog_score = 100.0 * len(fussion_refog_set) / len(U)
-    fussion_predog_score = 100.0 * len(fussion_predog_dict) / len(V)
-    print("%0.1f%%  Fussion (refOG) (%%)" % fussion_refog_score)
-    print("%0.1f%%  Fussion (predOG) (%%)" % fussion_predog_score)
+    fusion_refog_set, fusion_predog_dict = fusion(V_prime, V)
+    fusion_refog_score = 100.0 * len(fusion_refog_set) / len(U)
+    fusion_predog_score = 100.0 * len(fusion_predog_dict) / len(V)
+    print("%0.1f%%  Fussion (refOG) (%%)" % fusion_refog_score)
+    print("%0.1f%%  Fussion (predOG) (%%)" % fusion_predog_score)
     print()
 
     (
