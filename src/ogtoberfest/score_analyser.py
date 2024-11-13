@@ -72,6 +72,34 @@ def rand_score(global_score_dict, score_names, precision=3, rank_method="min"):
     global_scores_rank_dict = dict(zip(method, rank_arr))
     return ranked_global_score_dict, global_scores_rank_dict
 
+def z_score(global_score_dict, score_names, precision=3):
+    method, scores = zip(*global_score_dict.items())
+    filtered_score = []
+    for score in scores:
+        score_dict = dict(zip(score_names, score))
+        score_list = []
+        for name, score in score_dict.items():
+            if "recall" in name.lower() \
+                or "precision" in name.lower() \
+                    or "f1-score" in name.lower() \
+                        or "index" in name.lower():
+                score_list.append(score / 100)
+            elif "entropy" in name.lower() or "disimilarity" in name.lower():
+                score_list.append(1 - score)
+            else:
+                score_list.append(1 - score / 100)
+
+        filtered_score.append(score_list)
+
+    score_arr = np.array(filtered_score)
+    z_score_arr = ss.zscore(score_arr, axis=0, ddof=1, nan_policy='omit')
+    z_score_arr = np.nan_to_num(z_score_arr)
+    z_score_sum = np.sum(z_score_arr, axis=1).round(3)
+    for i, score in enumerate(scores):
+        score.append(z_score_sum[i])
+
+    ranked_global_score_dict = dict(zip(method, scores))
+    return ranked_global_score_dict
 
 def get_scores(
         ref_ogs: Dict[str, Set[str]],

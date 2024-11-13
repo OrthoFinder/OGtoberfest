@@ -35,7 +35,7 @@
                 "-D",
                 "--database"
             ],
-            "name": "databse_path",
+            "name": "database_path",
             "default": "./OrthoBench/proteomes_gene_labels",
             "action": "",
             "description": "A directory containing the fasta files",
@@ -259,12 +259,12 @@
                 "--combined-global-score"
             ],
             "name": "combined_global_score",
-            "default": "Avg Rank Score",
+            "default": "Rank Score",
             "action": "",
             "description": "Combined Global scores for benchmarking",
             "help": "",
             "limit": "",
-            "valid_options": ["Avg Rank Score", "Simple Avg Score"],
+            "valid_options": ["Rank Score", "Avg Score", "Z-score"],
             "error_message": "",
             "category": "public"
         },

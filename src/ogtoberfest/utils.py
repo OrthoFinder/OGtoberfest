@@ -104,6 +104,7 @@ def get_func_name_map():
         "sonicparanoid": "sonicparanoid",
         "sonicparanoid2": "sonicparanoid",
         "sp2": "sonicparanoid",
+        "sp": "sonicparanoid",
         "sonic": "sonicparanoid",
         "broccoli": "broccoli",
         "broc": "broccoli",
