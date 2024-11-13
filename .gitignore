@@ -166,4 +166,9 @@ OrthoBench/proteomes
 OrthoBench/preprocessed_*
 OrthoBench/predicted_*
 OrthoBench/scores_*
+OrthoBench/RefOGs/
+OrthoBench/figs/
+OrthoBench/iqtree2_logs/
+OrthoBench/old_predicted_orthogroups/
+OrthoBench/orthobench_proteomes/
 .pre-commit-config.yaml
