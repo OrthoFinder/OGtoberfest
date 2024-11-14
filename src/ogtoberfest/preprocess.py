@@ -112,7 +112,7 @@ def sonicparanoid(input_file, output_file):
                 line = line.strip()
                 if n == 0:
                     species_list = [
-                        item.split(".", 1)[0] for item in line.split("\t", 1)[1].split()
+                        item.split(".", 1)[0] for item in line.split("\t", 1)[1].split("\t")
                     ]
                 else:
                     predog_key, genes_str = line.split("\t", 1)
@@ -215,3 +215,73 @@ def broccoli(input_file, output_file, protemes_dir: Optional[pathlib.Path] = Non
             return 
     else:
         broccoli_v1(input_file, output_file)
+
+
+def proteinortho(input_file, output_file):
+    predog_base_name = "PredOG%07d"
+    with open(output_file, "w") as writer:
+        with open(input_file, "r") as reader:
+            for n, line in enumerate(reader):
+                line = line.strip()
+                if n == 0:
+                    species_list = [
+                        item.split(".", 1)[0] for item in line.split("\t", 3)[-1].split()
+                    ]
+                else:
+                    predog_key = predog_base_name % n
+                    genes_list = line.split("\t")[3:]
+                    genes = []
+                    for i, gene in enumerate(genes_list):
+                        if gene == "*":
+                            continue
+                        if species_list[i] not in gene:
+                            genes.append(
+                                ", ".join(
+                                    [
+                                        species_list[i] + "." + g
+                                        for g in re.split(" |,", gene)
+                                        if len(g) != 0
+                                    ]
+                                )
+                            )
+                        else:
+                            genes.append(gene)
+                    og = predog_key + ": " + ", ".join(genes)
+                    writer.write(og + "\n")
+
+def fastoma(input_file, output_file, protemes_dir: pathlib.Path):
+    species_gene_dict = {}
+
+    for file in protemes_dir.iterdir():
+        species = file.name.split(".", 1)[0]
+        with open(file, "r") as reader:
+            for line in reader:
+                if ">" in line:
+                    gene = line[1:].strip().split(".", 1)[-1]
+                    species_gene_dict[gene] = species
+
+    predog_dict = {}
+    with open(input_file, "r") as reader:
+        for i, line in enumerate(reader):
+            line = line.strip()
+            if i == 0:
+                continue
+
+            predog_key, gene = line.split("\t")[:2]
+            predog_key = predog_key.replace(":", "")
+            gene = gene.strip()
+            species = species_gene_dict.get(gene) 
+            if species is not None:
+                predog_gene = species + "." + gene
+            else:
+                predog_gene = gene
+
+            if predog_key not in predog_dict:
+                predog_dict[predog_key] = [predog_gene]
+            elif predog_key in predog_dict:
+                predog_dict[predog_key].append(predog_gene)
+
+    with open(output_file, "w") as writer:      
+        for predog_key, genes in predog_dict.items():
+            og = predog_key + ": " + ", ".join(genes)
+            writer.write(og + "\n")

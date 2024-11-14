@@ -19,7 +19,7 @@ def preprocess_file(
     ):
     if method_func_name is not None:
         method_func = funcs_dict[method_func_name]
-        if method_func_name in ["hieranoid", "broccoli"]:
+        if method_func_name in ["hieranoid", "fastoma", "broccoli"]:
             method_func(
                 file,
                 manager.options.output_path / file.name,
@@ -54,9 +54,9 @@ def main(args: Optional[List[str]] = None):
                 method = method.lower()
                 method_func_name = method_name_maps.get(method)
 
-                if method_func_name == "hieranoid" \
+                if method_func_name in ["hieranoid", "fastoma", "broccoli"] \
                     and manager.options.database_path is None:
-                    print("Hieranoid needs to provide a database!")
+                    print(f"{method_func_name.titile()} needs to provide a database!")
                     continue
                 preprocess_file(
                     manager,
@@ -69,9 +69,9 @@ def main(args: Optional[List[str]] = None):
             method = re.split("_|\.", manager.options.input_path.name)[0]
             method = method.lower()
             method_func_name = method_name_maps.get(method)
-            if method_func_name == "hieranoid":
+            if method_func_name in ["hieranoid", "fastoma", "broccoli"]:
                 if manager.options.database_path is None:
-                    print("Hieranoid needs to provide a database!")
+                    print(f"{method_func_name.titile()} needs to provide a database!")
                     sys.exit(1)
 
             preprocess_file(

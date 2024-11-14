@@ -241,7 +241,7 @@
                 "Missing Genes",
                 "Fusion (RefOGs)",
                 "Fision (RefOGs)",
-                "Weighted Avg Recall",
+                "Weighted Avg Recall", 
                 "Weighted Avg Precision",
                 "Avg Entropy"
             ],

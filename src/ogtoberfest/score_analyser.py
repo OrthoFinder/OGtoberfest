@@ -6,7 +6,7 @@ from ogtoberfest import scorefuncs as sf
 from ogtoberfest import orthogroups_analyser as opa
 
 
-def combine_scores(scores_list, score_names, precision=3, avg_method="rms"):
+def combine_scores(scores_list, score_names, precision=3, avg_method="mean"):
 
     score_dict = dict(zip(score_names, scores_list))
     if avg_method == "mean":

@@ -71,7 +71,8 @@ def plot_barplot(df):
     axes = axes.flatten() if num_cols > 1 else [axes]
     for ax, col in zip(axes, df.columns[1:]):
         # plot_boxplot(df, "bin_number", col, ax)
-        sns.barplot(df, x="Methods", y=col, hue="Methods", palette="deep", ax=ax)
+        df.sort_values(by=[col], inplace=True)
+        sns.barplot(df, x="Methods", y=col, hue="Methods", palette="deep", ax=ax, width=1.0)
         ax.axhline(0, color="k", clip_on=False)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=90, ha="right")
         ax.set_xlabel("")
@@ -89,11 +90,11 @@ input_path = r"./OrthoBench/scores_preprocessed_predicted_orthogroups/OrthoBench
 df = pd.read_csv(input_path, sep="\t")
 df.sort_values(
     by=[
-        "Avg Rank Score",
+        "Rank Score",
         "Weighted Avg Recall",
         "Weighted Avg Precision",
-        "Fission (RefOG)",
-        "Fussion (RefOG)",
+        "Fision (RefOGs)",
+        "Fusion (RefOGs)",
         "Avg Entropy",
         "Missing Genes",
     ],

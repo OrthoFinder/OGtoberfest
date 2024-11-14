@@ -112,6 +112,12 @@ def get_func_name_map():
         "hieranoid": "hieranoid",
         "omcl": "orthomcl",
         "orthomcl": "orthomcl",
+        "po": "proteinortho",
+        "prot": "proteinortho",
+        "proteinortho": "proteinortho",
+        "fastoma": "fastoma",
+        "fast": "fastoma",
+        "fo": "fastoma",
     }
     return func_name
 
