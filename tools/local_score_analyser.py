@@ -92,7 +92,7 @@ def corr_analysis(combined_df, title, d_output=None):
 
 
 local_score_dir = (
-    r"./OrthoBench/scores_preprocessed_predicted_orthogroups/local_scores"
+    r"./OrthoBench/scores_preprocessed_predicted_orthogroups"
 )
 local_score_fig = (
     r"./OrthoBench/figs"
@@ -104,19 +104,24 @@ refogs_df = pd.read_csv(refogs_path, sep="\t", usecols=lambda x: x != "Orthogrou
 
 refog_colnames = [
     # "num_genes_per_species",
-    # "avg_tree_length",
+    "avg_tree_length",
     # "mean_length",
     # "invariable_sites_proportion",
-    "gamma_shape",
+    # "gamma_shape",
     # "total_tree_length",
 ]
 
+
 predog_colnames = [
-    # "avg_Recall (%)",
-    # "avg_Precision (%)",
-    "avg_F1-score (%)",
-    # "EffectiveSize (JI_weighted)",
-    # "MissingGenes (%)",
+    # "Weighted Avg Recall",
+    "Weighted Avg Precision",
+    # "Weighted Avg F1-score",
+    # "Weighted Avg Fowlkes-Mallows Index",
+    # "Weighted Avg Jaccard Index",
+    # "Weighted Avg Dissimilarity",
+    # "Effective Size",
+    # "Missing Genes Count",
+    # "Missing Genes Percentage",
     # "Entropy",
 ]
 
@@ -126,13 +131,13 @@ predog_colnames = [
 
 
 for predog_col in predog_colnames:
-
+    
     for eval_col in refog_colnames:
         if eval_col == "num_genes_per_species":
             refogs_df[eval_col] = 100. * refogs_df[eval_col]
         if eval_col == "gamma_shape":
             refogs_df.drop(refogs_df.tail(1).index, inplace=True)
-
+        print(f"Processing {predog_col} vs. {eval_col}....")
         refogs_df["bin_col"] = pd.cut(refogs_df[eval_col], 20, duplicates="drop")
         refogs_df["avg_bin"] =  refogs_df["bin_col"].astype(str)
         bin_mean = refogs_df["avg_bin"].str.replace("\(|]", "", regex=True).str.split(", ", expand=True)
@@ -142,6 +147,9 @@ for predog_col in predog_colnames:
 
         score_dfs = [refogs_df[['RefOGs', eval_col, "avg_bin"]]]
         for file in pathlib.Path(local_score_dir).iterdir():
+            
+            if "global_score" in file.name or not file.is_file():
+                continue
             # df = pd.read_csv(file, sep="\t", usecols=lambda x: x != "Missing_Genes")
             score_df = pd.read_csv(file, sep='\t', usecols=["RefOGs", predog_col])
             score_df.rename(columns={predog_col: file.name.rsplit(".", 1)[0]}, inplace=True)

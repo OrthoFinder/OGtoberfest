@@ -2,7 +2,7 @@ import copy
 from itertools import product
 
 import numpy as np
-from scipy.special import comb, gammaln
+from scipy.special import comb, factorial, gammaln
 from scipy.stats import expon
 from sklearn.metrics import cluster
 from typing import Dict, List, Optional, Tuple, Set
@@ -101,16 +101,22 @@ def normalised_reduced_mutual_information(U, V, n, list_products, rmi_type="dens
 
 def mutual_information(U, V, n, list_products):
     I = 0.0
-    for (u, u_set), (v, v_set) in list_products:
 
+    for (u, u_set), (v, v_set) in list_products:
         nij = len(u_set & v_set)
         ai = len(U[u])
         bj = len(V[v])
         pi = ai / n
         pj = bj / n
         pij = nij / n
+        # print(u, v, nij, ai, bj)
+        if nij == ai == bj == n:
+            I += 1.
+            return I
+        
         if pij != 0:
             I += pij * np.log2(pij / (pi * pj))
+
     return I
 
 
@@ -162,28 +168,13 @@ def v_measure(U, V, n, list_products):
     return v
 
 
-def adjusted_mutual_information(U, V, n, list_products):
-    """
-    AMI:
-        Range: [-1, 1]
-            1: Perfect agreement between the two clusterings.
-            0: Agreement is no better than random chance.
-            Negative values: Worse than random chance.
-
-    AMI should be used when the reference clustering is unbalanced and there exist small clusters.
-    reference:
-    [1] Information Theoretic Measures for Clusterings Comparison: Is a Correction for Chance Necessary?
-    [2] Adjusting for Chance Clustering Comparison Measures
-    """
-
-    I = mutual_information(U, V, n, list_products)
+def expected_information(U, V, n, list_products):
     EI = 0.0
-
     for (u, u_set), (v, v_set) in list_products:
         nij = len(u_set & v_set)
         ai = len(U[u])
         bj = len(V[v])
-
+        
         for nij in range(np.amax((0, ai + bj - n)), np.amin((ai, bj)) + 1):
             if nij != 0:
                 first_part = (nij / n) * np.log2((n * nij) / (ai * bj))
@@ -200,26 +191,222 @@ def adjusted_mutual_information(U, V, n, list_products):
                 )
 
                 EI += first_part * np.exp(second_part_numerator_log - second_part_denomenator_log)
+    return EI 
 
+
+def adjusted_mutual_information(U, V, n, list_products):
+    """
+    AMI:
+        Range: [-1, 1]
+            1: Perfect agreement between the two clusterings.
+            0: Agreement is no better than random chance.
+            Negative values: Worse than random chance.
+
+    AMI should be used when the reference clustering is unbalanced and there exist small clusters.
+    reference:
+    [1] Information Theoretic Measures for Clusterings Comparison: Is a Correction for Chance Necessary?
+    [2] Adjusting for Chance Clustering Comparison Measures
+    """
+
+    MI = mutual_information(U, V, n, list_products)
+    EI = expected_information(U, V, n, list_products)
     HU = np.sum([-(len(u_set) / n) * np.log2(len(u_set) / n) for _, u_set in U.items()])
     HV = np.sum([-(len(v_set) / n) * np.log2(len(v_set) / n) for _, v_set in V.items()])
-
-    AMI = (I - EI) / (np.mean([HU, HV]) - EI)
-
+    if MI == 1.0:
+        return 1.0
+    AMI = (MI - EI) / (np.mean([HU, HV]) - EI)
     return AMI
 
 
 def variation_of_information(U, V, n, list_products, vi_type="normalised"):
+
+    I = mutual_information(U, V, n, list_products)
+    EI = expected_information(U, V, n, list_products)
+
     HU = np.sum([-(len(u_set) / n) * np.log2(len(u_set) / n) for _, u_set in U.items()])
     HV = np.sum([-(len(v_set) / n) * np.log2(len(v_set) / n) for _, v_set in V.items()])
-    I = mutual_information(U, V, n, list_products)
-    EI = adjusted_mutual_information(U, V, n, list_products)
+
+    if I == 1.0 or (HU + HV == 2 * EI):
+        return 0.0
+    
     if vi_type == "normalised":
         NVI = (HU + HV - 2 * I) / (HU + HV - 2 * EI)
-        return NVI
+        return max(0.0, NVI)
     elif vi_type == "adjusted":
         AVI = (2 * I - 2 * EI) / (HU + HV - 2 * EI)
-        return AVI
+        return max(0.0, AVI)
+
+
+# def sparse_contingency_table_count(U, V, n):
+
+#     n_fac = factorial(n, exact=False)
+#     ar_fac = np.prod([factorial(len(u_set)) for _, u_set in U.items()])
+#     bs_fac = np.prod([factorial(len(v_set)) for _, v_set in V.items()])
+
+#     ar_comb = comb([len(u_set) for _, u_set in U.items()], 2).sum()
+#     bs_comb = comb([len(v_set) for _, v_set in V.items()], 2).sum()
+#     log_sigma_ab = np.log2(n_fac / (ar_fac * bs_fac)) + 2 * ar_comb * bs_comb / n**2 
+#     return log_sigma_ab
+
+# def dense_contingency_table_count(U, V, n):
+
+#     R = len(U)
+#     S = len(V)
+#     RS = R * S
+#     w = n / (n + RS / 2)
+#     xrs = np.array([(1 - w) / R + w * len(u_set) / n for _, u_set in U.items()])
+#     yss = np.array([(1 - w) / S + w * len(v_set) / n for _, v_set in V.items()])
+#     mu = (R + 1) / (R * np.sum(yss**2)) - 1 / R 
+#     v = (S + 1) / (S * np.sum(xrs**2)) - 1 / S
+#     log_sigma_ab = (R - 1) * (S -1) * np.log2(n + RS / 2) + \
+#             (R + v - 2) * np.sum(np.log2(yss)) / 2 + \
+#             (S + mu - 2) * np.sum(np.log2(xrs)) / 2 + \
+#             np.log2(factorial(mu * R - 1) * factorial(v * S - 1) / ((factorial(v - 1) * factorial(R - 1))**S * (factorial(mu - 1) * factorial(S - 1))**R)) / 2
+
+#     return log_sigma_ab
+
+# def normalised_reduced_mutual_information(U, V, n, list_products, rmi_type="dense"):
+
+#     """
+#     reference:
+#     [1] Improved mutual information measure for clustering, classification, and community detection
+#     [2] Comment on "Improved mutual information measure for clustering, classification, and community detection"
+    
+#     """
+
+#     n_fac = factorial(n, exact=False)
+#     ar_fac = np.prod([factorial(len(u_set)) for _, u_set in U.items()])
+#     bs_fac = np.prod([factorial(len(v_set)) for _, v_set in V.items()])
+    
+#     crs_fac = 1
+#     for (u, u_set), (v, v_set) in list_products:
+#         crs = len(u_set & v_set)
+#         if crs != 0:
+#             crs_fac *= factorial(crs)
+#     if rmi_type == "dense":
+#         log_sigma_ab = dense_contingency_table_count(U, V, n)
+#         log_sigma_aa = dense_contingency_table_count(U, U, n)
+#         log_sigma_bb = dense_contingency_table_count(V, V, n)
+
+#     elif rmi_type == "sparse":
+#         log_sigma_ab = dense_contingency_table_count(U, V, n)
+#         log_sigma_aa = dense_contingency_table_count(U, U, n)
+#         log_sigma_bb = dense_contingency_table_count(V, V, n)
+
+#     # RMI = np.log2(n_fac * crs_fac / (ar_fac * bs_fac)) / n - log_sigma_ab / n 
+#     numerator = 2 * (np.log2(n_fac * crs_fac / (ar_fac * bs_fac)) - log_sigma_ab)
+#     denomenator = np.log2(factorial(n) / ar_fac) + np.log2(factorial(n) / bs_fac) - log_sigma_aa - log_sigma_bb
+#     NRMI = numerator / denomenator
+
+#     return NRMI
+
+# def mutual_information(U, V, n, list_products):
+#     I = 0.0
+#     for (u, u_set), (v, v_set) in list_products:
+
+#         nij = len(u_set & v_set)
+#         ai = len(U[u])
+#         bj = len(V[v])
+#         pi = ai / n 
+#         pj = bj / n 
+#         pij = nij / n
+#         if pij != 0:
+#             I += pij * np.log2(pij / (pi * pj))
+#     return I
+
+# def homogeneity(U, V, n, list_products):
+#     """
+#     Measures whether each cluster contains only members of a single class.
+#     """
+#     I = mutual_information(U, V, n, list_products)
+#     HU = np.sum([-(len(u_set) / n) * np.log2(len(u_set) / n) for _, u_set in U.items()])
+#     h = I / HU 
+#     return h 
+
+# def completeness(U, V, n, list_products):
+#     """
+#     Measures whether all members of a given class are assigned to the same cluster
+#     """
+#     I = mutual_information(U, V, n, list_products)
+#     HV = np.sum([-(len(v_set) / n) * np.log2(len(v_set) / n) for _, v_set in V.items()])
+#     c = I / HV 
+#     return c
+
+# def v_measure(U, V, n, list_products):
+#     """
+#     The harmonic mean of homogeneity and completeness, 
+#     providing a single score to assess the clustering performance
+
+#     Pros:
+
+#         1. Provide a direct assessment of the match between cluster assignments 
+#            and the class labels in terms of both purity and class representation.
+#         2. The scores are bounded between 0 and 1.
+#         3. Have intuitive interpretation.
+#         4. No assumption is made on the cluster structure.
+
+#     Cons:
+#         1. Do not take into account how data points are distributed within each cluster.
+#         2. Not normalized against random grouping (unlike ARI). 
+#             This means that depending on the number of samples, clusters and classes, 
+#             a completely random grouping of the samples will not always yield the same values for 
+#             homogeneity, completeness, and v-measure. For this reason, for small datasets 
+#             (number of samples < 1000) or large number of clusters (> 10) it is safer to use ARI.
+
+#     """
+#     h = homogeneity(U, V, n, list_products)
+#     c = completeness(U, V, n, list_products)
+#     v = 2 * h * c / (h + c)
+#     return v
+
+# def adjusted_mutual_information(U, V, n, list_products):
+
+#     """
+#     AMI:
+#         Range: [-1, 1]
+#             1: Perfect agreement between the two clusterings.
+#             0: Agreement is no better than random chance.
+#             Negative values: Worse than random chance.
+
+#     AMI should be used when the reference clustering is unbalanced and there exist small clusters.
+#     reference: 
+#     [1] Information Theoretic Measures for Clusterings Comparison: Is a Correction for Chance Necessary?
+#     [2] Adjusting for Chance Clustering Comparison Measures
+#     """
+    
+#     I = mutual_information(U, V, n, list_products)
+#     EI = 0.0
+#     for (u, u_set), (v, v_set) in list_products:
+#         nij = len(u_set & v_set)
+#         ai = len(U[u])
+#         bj = len(V[v])
+#         for nij in range(np.amax((0, ai + bj - n)), np.amin((ai, bj)) + 1):
+#             if nij != 0:
+#                 first_part = (nij / n) * np.log2((n * nij) / (ai * bj))
+            
+#                 second_part_numerator = (factorial(ai) * factorial(bj) * factorial(n - ai) * factorial(n - bj))
+#                 second_part_denomenator = (factorial(n) * factorial(nij) * factorial(ai - nij) * factorial(bj - nij) * factorial(n - ai - bj + nij))
+
+#                 EI +=  first_part * second_part_numerator / second_part_denomenator
+    
+#     HU = np.sum([-(len(u_set) / n) * np.log2(len(u_set) / n) for _, u_set in U.items()])
+#     HV = np.sum([-(len(v_set) / n) * np.log2(len(v_set) / n) for _, v_set in V.items()])
+#     AMI = (I - EI) / (np.mean([HU, HV]) - EI)
+
+#     return AMI
+
+# def variation_of_information(U, V, n, list_products, vi_type = "normalised"):
+#     HU = np.sum([-(len(u_set) / n) * np.log2(len(u_set) / n) for _, u_set in U.items()])
+#     HV = np.sum([-(len(v_set) / n) * np.log2(len(v_set) / n) for _, v_set in V.items()])
+#     I = mutual_information(U, V, n, list_products)
+#     EI = adjusted_mutual_information(U, V, n, list_products)
+#     if vi_type == "normalised":
+#         NVI  = (HU + HV - 2 * I) / (HU + HV - 2 * EI)
+#         return NVI
+#     elif vi_type == "adjusted":
+#         AVI = (2 * I - 2 * EI) / (HU + HV - 2 * EI)
+#         return AVI
+
 
 
 def rearange(label_dict):
@@ -269,29 +456,33 @@ def rand_index(U, V, n, list_products, ri_type="adjusted"):
            For example, even if the data points within a cluster are spread out or form sub-clusters, this will not affect the RI or ARI scores.
 
     """
+
     a_list = [len(u_set & v_set) for (u, u_set), (v, v_set) in list_products]
-    a = comb(a_list, 2).sum()
+    a = sum(comb(x, 2, exact=False) for x in a_list)  
     marginal_u = [len(u_set) for u_set in U.values()]
     marginal_v = [len(v_set) for v_set in V.values()]
 
-    marginal_u_comb = comb(marginal_u, 2).sum()
-    marginal_v_comb = comb(marginal_v, 2).sum()
+    marginal_u_comb = sum(comb(x, 2, exact=False) for x in marginal_u)
+    marginal_v_comb = sum(comb(x, 2, exact=False) for x in marginal_v)
+    total_pairs = comb(n, 2, exact=False)
+
     b = marginal_u_comb - a
     c = marginal_v_comb - a
-    d = comb(n, 2) - a - b - c
+    d = total_pairs - a - b - c
 
     if ri_type != "adjusted":
-        RI = (a + d) / comb(n, 2)
+        RI = (a + d) / total_pairs
         return RI
 
-    expected_index = marginal_u_comb * marginal_v_comb / comb(n, 2)
+    expected_index = marginal_u_comb * marginal_v_comb / total_pairs
     maximum_index = (marginal_u_comb + marginal_v_comb) / 2
-    if maximum_index != expected_index:
-        ARI = (a - expected_index) / (maximum_index - expected_index)
-    else:
-        ARI = 0
-    return ARI
 
+    if np.isclose(maximum_index, expected_index):  
+        ARI = 1.0
+    else:
+        ARI = (a - expected_index) / (maximum_index - expected_index)
+
+    return ARI
 
 def kl_divergence(P, Q, n, m):
 
@@ -318,6 +509,10 @@ def check_missing_genes(U, V_prime, num_round):
 
         nrefog = len(refog)
         FN = refog - predog_set
+        for item in FN:
+            for predog in V_prime[refog_key].values():
+                if item in predog:
+                    print(item)
         if len(FN) != 0:
             total_missing_genes_set = total_missing_genes_set.union(FN)
             missing_genes_dict[refog_key] = FN
@@ -509,7 +704,7 @@ def macro_and_weighted_avg_scores(U, V_prime, n, num_round):
             all_scores = sorted(all_scores, key=lambda x: x[2])
             all_score_dict[refog_key] = ", ".join([":".join(item) for item in all_scores])
             all_TP_dict[refog_key] = {
-                predog_key: ",".join(refog & predog) for predog_key, predog in V_prime[refog_key].items()
+                predog_key: refog & predog for predog_key, predog in V_prime[refog_key].items()
             }
         else:
             weighted_recall_dict[refog_key] = 0.0
@@ -628,7 +823,7 @@ def V_to_V_complete(V, total_missing_genes_set):
 
     V_complete = copy.deepcopy(V)
     if len(total_missing_genes_set) != 0:
-        V_complete["unassigned_genes"] = total_missing_genes_set
+        V_complete["missing_genes"] = total_missing_genes_set
 
     return V_complete
 
@@ -727,15 +922,15 @@ def fusion(V_prime, V):
     return fusion_refog_set, fusion_predog_dict
 
 
-def fision(U, V_prime):
-    fision_predog_set = set()
-    fision_refog_set = set()
+def fission(U, V_prime):
+    fission_predog_set = set()
+    fission_refog_set = set()
     for refog_key in U:
         if len(V_prime[refog_key]) > 1:
-            fision_refog_set.add(refog_key)
-            fision_predog_set = fision_predog_set.union(set([*V_prime[refog_key].keys()]))
+            fission_refog_set.add(refog_key)
+            fission_predog_set = fission_predog_set.union(set([*V_prime[refog_key].keys()]))
 
-    return fision_refog_set, fision_predog_set
+    return fission_refog_set, fission_predog_set
 
 
 def calculate_benchmarks_pairwise(
@@ -846,20 +1041,53 @@ def calculate_benchmarks_pairwise(
 
     return TP, FP, FN, recall, pres, f
 
+def check_missing_species(refog_species_dict, predog_species_dict):
+    missing_species_dict = {}
+    missing_species_num_dict = {}
+    
+    for refog_key, refog_species in refog_species_dict.items():
+        for predog_key, predog_species in predog_species_dict[refog_key].items():
+            refog_species.difference_update(predog_species)
+        missing_species_dict[refog_key] = refog_species
+        missing_species_num_dict[refog_key] = len(refog_species)
+    
+    return  missing_species_dict, missing_species_num_dict
+
+            
+  
+
 
 if __name__ == "__main__":
 
-    U = {1: {"gene1", "gene4", "gene5"}, 2: {"gene2", "gene7", "gene3"}, 3: {"gene6", "gene8", "gene9", "gene10"}}
+    # U = {
+    #     1: {"gene1", "gene4", "gene5"}, 
+    # }
 
-    V_raw = {
-        # 6: {"gene1", "gene4"},
-        8: {"gene8", "gene3"},
-        7: {"gene2", "gene6"},
-        9: {"gene10", "gene7"},
-        12: {"gene22", "gene16"},
-        # 4: {10: {"gene9", "gene5"}}
-    }
+    # V_raw = {
+    #     6: {"gene1", "gene4", "gene5"},
+    # }
 
+
+    # U = {
+    #     1: {"gene1", "gene4", "gene5"}, 
+    #     2: {"gene2", "gene7", "gene3"}, 
+    #     3: {"gene6", "gene8", "gene9", "gene10"}
+    # }
+
+    # V_raw = {
+    #     6: {"gene1", "gene4"},
+    #     8: {"gene8", "gene3"},
+    #     7: {"gene2", "gene6", "gene9"},
+    #     9: {"gene10", "gene7", "gene5"},
+    #     # 12: {"gene22", "gene16"},
+    #     # 4: {10: {"gene9", "gene5"}}
+    # }
+
+
+    U = {'61': {'Danio_rerio.ENSDARP00000086805', 'Rattus_norvegicus.ENSRNOP00000007398', 'Mus_musculus.ENSMUSP00000147115', 'Canis_familiaris.ENSCAFP00000046753', 'Homo_sapiens.ENSP00000353590', 'Pan_troglodytes.ENSPTRP00000064140', 'Tetraodon_nigroviridis.ENSTNIP00000006941', 'Danio_rerio.ENSDARP00000124366', 'Caenorhabditis_elegans.WBGene00003777.1', 'Caenorhabditis_elegans.WBGene00003776.1', 'Monodelphis_domestica.ENSMODP00000051065', 'Mus_musculus.ENSMUSP00000090661', 'Homo_sapiens.ENSP00000379616', 'Drosophila_melanogaster.FBpp0072306', 'Rattus_norvegicus.ENSRNOP00000035440', 'Danio_rerio.ENSDARP00000125918', 'Pan_troglodytes.ENSPTRP00000078901', 'Pan_troglodytes.ENSPTRP00000065124', 'Ciona_intestinalis.ENSCINP00000035221', 'Danio_rerio.ENSDARP00000134054', 'Rattus_norvegicus.ENSRNOP00000062744', 'Canis_familiaris.ENSCAFP00000060526', 'Tetraodon_nigroviridis.ENSTNIP00000010900', 'Gallus_gallus.ENSGALP00000043966', 'Homo_sapiens.ENSP00000478109', 'Gallus_gallus.ENSGALP00000053892', 'Monodelphis_domestica.ENSMODP00000010173', 'Pan_troglodytes.ENSPTRP00000069176', 'Canis_familiaris.ENSCAFP00000057173', 'Danio_rerio.ENSDARP00000041141', 'Canis_familiaris.ENSCAFP00000061753', 'Tetraodon_nigroviridis.ENSTNIP00000006335', 'Homo_sapiens.ENSP00000216181', 'Rattus_norvegicus.ENSRNOP00000073929', 'Tetraodon_nigroviridis.ENSTNIP00000017126', 'Danio_rerio.ENSDARP00000114445', 'Monodelphis_domestica.ENSMODP00000001289', 'Mus_musculus.ENSMUSP00000156021', 'Gallus_gallus.ENSGALP00000046782', 'Rattus_norvegicus.ENSRNOP00000072636', 'Tetraodon_nigroviridis.ENSTNIP00000023109', 'Tetraodon_nigroviridis.ENSTNIP00000001018', 'Mus_musculus.ENSMUSP00000016771', 'Homo_sapiens.ENSP00000493594'}, 
+         'missing_genes': {'Tetraodon_nigroviridis.ENSTNIP00000006941', 'Tetraodon_nigroviridis.ENSTNIP00000004844', 'Danio_rerio.ENSDARP00000155954', 'Tetraodon_nigroviridis.ENSTNIP00000007040'}}
+    V_raw = {'61': {'Ciona_intestinalis.ENSCINP00000035221', 'Drosophila_melanogaster.FBpp0072306', 'Danio_rerio.ENSDARP00000124366', 'Homo_sapiens.ENSP00000353590', 'Tetraodon_nigroviridis.ENSTNIP00000006941', 'Danio_rerio.ENSDARP00000134054', 'Rattus_norvegicus.ENSRNOP00000072636', 'Caenorhabditis_elegans.WBGene00003777.1', 'Tetraodon_nigroviridis.ENSTNIP00000017126', 'Pan_troglodytes.ENSPTRP00000069176', 'Danio_rerio.ENSDARP00000114445', 'Tetraodon_nigroviridis.ENSTNIP00000001018', 'Canis_familiaris.ENSCAFP00000061753', 'Gallus_gallus.ENSGALP00000043966', 'Monodelphis_domestica.ENSMODP00000001289', 'Homo_sapiens.ENSP00000478109', 'Mus_musculus.ENSMUSP00000156021', 'Canis_familiaris.ENSCAFP00000057173', 'Homo_sapiens.ENSP00000216181', 'Rattus_norvegicus.ENSRNOP00000073929', 'Rattus_norvegicus.ENSRNOP00000007398', 'Monodelphis_domestica.ENSMODP00000051065', 'Homo_sapiens.ENSP00000493594', 'Mus_musculus.ENSMUSP00000147115', 'Danio_rerio.ENSDARP00000086805', 'Gallus_gallus.ENSGALP00000053892', 'Monodelphis_domestica.ENSMODP00000010173', 'Pan_troglodytes.ENSPTRP00000065124', 'Rattus_norvegicus.ENSRNOP00000062744', 'Canis_familiaris.ENSCAFP00000046753', 'Mus_musculus.ENSMUSP00000016771', 'Rattus_norvegicus.ENSRNOP00000035440', 'Homo_sapiens.ENSP00000379616', 'Caenorhabditis_elegans.WBGene00003776.1', 'Canis_familiaris.ENSCAFP00000060526', 'Gallus_gallus.ENSGALP00000046782', 'Pan_troglodytes.ENSPTRP00000078901', 'Tetraodon_nigroviridis.ENSTNIP00000023109', 'Tetraodon_nigroviridis.ENSTNIP00000010900', 'Danio_rerio.ENSDARP00000125918', 'Tetraodon_nigroviridis.ENSTNIP00000006335', 'Pan_troglodytes.ENSPTRP00000064140', 'Danio_rerio.ENSDARP00000041141', 'Mus_musculus.ENSMUSP00000090661'}, 
+             'missing_genes': {'Tetraodon_nigroviridis.ENSTNIP00000006941', 'Tetraodon_nigroviridis.ENSTNIP00000004844', 'Tetraodon_nigroviridis.ENSTNIP00000007040', 'Danio_rerio.ENSDARP00000155954'}}
     # V_prime = {
     #     1: {6: {"gene1"}, 8: {"gene8", "gene3", "gene4"}},
     #     2: {7: {"gene2", "gene6"}, 9: { "gene10", "gene7"}, 8: {"gene8", "gene3", "gene4"}},
@@ -876,7 +1104,7 @@ if __name__ == "__main__":
     M_raw = np.sum([len(predog) for predog in V_raw.values()])
 
     missing_predogs_list = missing_predogs(V_prime)
-    print("%0.1f%%  Missing prefOGs (%%)" % (100.0 * len(missing_predogs_list) / len(U)))
+    # print("%0.1f%%  Missing prefOGs (%%)" % (100.0 * len(missing_predogs_list) / len(U)))
 
     (
         total_missing_genes,
@@ -884,104 +1112,104 @@ if __name__ == "__main__":
         missing_genes_dict,
         missing_genes_count_dict,
         missing_genes_proportion_dict,
-    ) = check_missing_genes(U, V_prime)
+    ) = check_missing_genes(U, V_prime, 3)
 
-    print("%0.1f%%  Missing Genes (%%)" % (100.0 * total_missing_genes / N))
+    # print("%0.1f%%  Missing Genes (%%)" % (100.0 * total_missing_genes / N))
 
-    fusion_refog_set, fusion_predog_dict = fusion(V_prime, V)
-    fusion_refog_score = 100.0 * len(fusion_refog_set) / len(U)
-    fusion_predog_score = 100.0 * len(fusion_predog_dict) / len(V)
-    print("%0.1f%%  Fussion (refOG) (%%)" % fusion_refog_score)
-    print("%0.1f%%  Fussion (predOG) (%%)" % fusion_predog_score)
-    print()
+    # fusion_refog_set, fusion_predog_dict = fusion(V_prime, V)
+    # fusion_refog_score = 100.0 * len(fusion_refog_set) / len(U)
+    # fusion_predog_score = 100.0 * len(fusion_predog_dict) / len(V)
+    # print("%0.1f%%  Fussion (refOG) (%%)" % fusion_refog_score)
+    # print("%0.1f%%  Fussion (predOG) (%%)" % fusion_predog_score)
+    # print()
 
-    (
-        micro_recall,
-        micro_precision,
-        micro_f1score,
-        micro_fowlkes_mallows_index,
-        micro_jaccard_index,
-        micro_dissimilarity,
-        micro_distance,
-    ) = micro_scores(U, V_prime, N)
+    # (
+    #     micro_recall,
+    #     micro_precision,
+    #     micro_f1score,
+    #     micro_fowlkes_mallows_index,
+    #     micro_jaccard_index,
+    #     micro_dissimilarity,
+    #     micro_distance,
+    # ) = micro_scores(U, V_prime, N)
 
-    print("%0.1f%%  micro Recall (%%)" % (100.0 * micro_recall))
-    print("%0.1f%%  micro Precision (%%)" % (100.0 * micro_precision))
-    print("%0.1f%%  micro F1-score (%%)" % (100.0 * micro_f1score))
-    print("%0.1f%%  micro Fowlkes Mallows Index (%%)" % (100.0 * micro_fowlkes_mallows_index))
-    print("%0.1f%%  micro Jaccard Index (%%)" % (100.0 * micro_jaccard_index))
-    print("%0.1f%%  micro Disimilarity (%%)" % (100.0 * micro_dissimilarity))
-    print("%0.2f   micro Distance" % (micro_distance))
-    print()
+    # print("%0.1f%%  micro Recall (%%)" % (100.0 * micro_recall))
+    # print("%0.1f%%  micro Precision (%%)" % (100.0 * micro_precision))
+    # print("%0.1f%%  micro F1-score (%%)" % (100.0 * micro_f1score))
+    # print("%0.1f%%  micro Fowlkes Mallows Index (%%)" % (100.0 * micro_fowlkes_mallows_index))
+    # print("%0.1f%%  micro Jaccard Index (%%)" % (100.0 * micro_jaccard_index))
+    # print("%0.1f%%  micro Disimilarity (%%)" % (100.0 * micro_dissimilarity))
+    # print("%0.2f   micro Distance" % (micro_distance))
+    # print()
 
-    (
-        total_weighted_recall,
-        macro_recall,
-        weighted_recall_dict,
-        total_weighted_precision,
-        macro_precision,
-        weighted_precision_dict,
-        total_weighted_f1score,
-        macro_f1score,
-        weighted_f1score_dict,
-        total_weighted_fowlkes_mallows,
-        macro_fowlkes_mallows,
-        weighted_fowlkes_mallows_dict,
-        total_weighted_JI,
-        macro_JI,
-        weighted_JI_dict,
-        total_weighted_dissimilarity,
-        macro_dissimilarity,
-        weighted_dissimilarity_dict,
-        total_weighted_distance,
-        macro_distance,
-        weighted_distance_dict,
-        macro_dissimilarity_distance,
-        all_score_dict,
-        all_TP_dict,
-        effective_size_precision_weighted_dict,
-        effective_size_JI_weighted_dict,
-        effective_size_JI_refog_weighted_dict,
-    ) = macro_and_weighted_avg_scores(U, V_prime, N)
+    # (
+    #     total_weighted_recall,
+    #     macro_recall,
+    #     weighted_recall_dict,
+    #     total_weighted_precision,
+    #     macro_precision,
+    #     weighted_precision_dict,
+    #     total_weighted_f1score,
+    #     macro_f1score,
+    #     weighted_f1score_dict,
+    #     total_weighted_fowlkes_mallows,
+    #     macro_fowlkes_mallows,
+    #     weighted_fowlkes_mallows_dict,
+    #     total_weighted_JI,
+    #     macro_JI,
+    #     weighted_JI_dict,
+    #     total_weighted_dissimilarity,
+    #     macro_dissimilarity,
+    #     weighted_dissimilarity_dict,
+    #     total_weighted_distance,
+    #     macro_distance,
+    #     weighted_distance_dict,
+    #     macro_dissimilarity_distance,
+    #     all_score_dict,
+    #     all_TP_dict,
+    #     effective_size_precision_weighted_dict,
+    #     effective_size_JI_weighted_dict,
+    #     effective_size_JI_refog_weighted_dict,
+    # ) = macro_and_weighted_avg_scores(U, V_prime, N)
 
-    print("%0.1f%%  macro Recall (%%)" % (100.0 * macro_recall))
-    print("%0.1f%%  macro Precision (%%)" % (100.0 * macro_precision))
-    print("%0.1f%%  macro F1-score (%%)" % (100.0 * macro_f1score))
-    print("%0.1f%%  macro Fowlkes Mallows Index (%%)" % (100.0 * macro_fowlkes_mallows))
-    print("%0.1f%%  macro Jaccard Index (%%)" % (100.0 * macro_JI))
-    print("%0.1f%%  macro Disimilarity (%%)" % (100.0 * macro_dissimilarity))
-    print("%0.2f   macro Distance" % (macro_distance))
-    print("%0.2f   macro Disimilarity Distance" % (macro_dissimilarity_distance))
-    print()
+    # print("%0.1f%%  macro Recall (%%)" % (100.0 * macro_recall))
+    # print("%0.1f%%  macro Precision (%%)" % (100.0 * macro_precision))
+    # print("%0.1f%%  macro F1-score (%%)" % (100.0 * macro_f1score))
+    # print("%0.1f%%  macro Fowlkes Mallows Index (%%)" % (100.0 * macro_fowlkes_mallows))
+    # print("%0.1f%%  macro Jaccard Index (%%)" % (100.0 * macro_JI))
+    # print("%0.1f%%  macro Disimilarity (%%)" % (100.0 * macro_dissimilarity))
+    # print("%0.2f   macro Distance" % (macro_distance))
+    # print("%0.2f   macro Disimilarity Distance" % (macro_dissimilarity_distance))
+    # print()
 
-    print("%0.1f%%  Weighted Avg Recall (%%)" % (100.0 * total_weighted_recall))
-    print("%0.1f%%  Weighted Avg Precision (%%)" % (100.0 * total_weighted_precision))
-    print("%0.1f%%  Weighted Avg F1-score (%%)" % (100.0 * total_weighted_f1score))
-    print("%0.1f%%  Weighted Avg Fowlkes Mallows Index (%%)" % (100.0 * total_weighted_fowlkes_mallows))
-    print("%0.1f%%  Weighted Avg Jaccard Index (%%)" % (100.0 * total_weighted_JI))
-    print("%0.1f%%  Weighted Avg Disimilarity (%%)" % (100.0 * total_weighted_dissimilarity))
-    print("%0.2f   Weighted Avg Distance" % (total_weighted_distance))
-    print()
+    # print("%0.1f%%  Weighted Avg Recall (%%)" % (100.0 * total_weighted_recall))
+    # print("%0.1f%%  Weighted Avg Precision (%%)" % (100.0 * total_weighted_precision))
+    # print("%0.1f%%  Weighted Avg F1-score (%%)" % (100.0 * total_weighted_f1score))
+    # print("%0.1f%%  Weighted Avg Fowlkes Mallows Index (%%)" % (100.0 * total_weighted_fowlkes_mallows))
+    # print("%0.1f%%  Weighted Avg Jaccard Index (%%)" % (100.0 * total_weighted_JI))
+    # print("%0.1f%%  Weighted Avg Disimilarity (%%)" % (100.0 * total_weighted_dissimilarity))
+    # print("%0.2f   Weighted Avg Distance" % (total_weighted_distance))
+    # print()
 
-    total_entropy, entropy_dict = entropy_score(U, V_prime, N)
-    print("%0.2f  Entropy" % (total_entropy))
+    # total_entropy, entropy_dict = entropy_score(U, V_prime, N)
+    # print("%0.2f  Entropy" % (total_entropy))
 
-    precision_weighted_KLD = kl_divergence(U, effective_size_precision_weighted_dict, N, M)
-    JI_weighted_KLD = kl_divergence(U, effective_size_JI_weighted_dict, N, M)
-    JI_refog_weighted_KLD = kl_divergence(U, effective_size_JI_refog_weighted_dict, N, M)
+    # precision_weighted_KLD = kl_divergence(U, effective_size_precision_weighted_dict, N, M)
+    # JI_weighted_KLD = kl_divergence(U, effective_size_JI_weighted_dict, N, M)
+    # JI_refog_weighted_KLD = kl_divergence(U, effective_size_JI_refog_weighted_dict, N, M)
 
-    print("%0.2f  Precision Weighted KLD" % (precision_weighted_KLD))
-    print("%0.2f  JI Weighted KLD" % (JI_weighted_KLD))
-    print("%0.2f  JI refOG Weighted KLD" % (JI_refog_weighted_KLD))
-    print()
+    # print("%0.2f  Precision Weighted KLD" % (precision_weighted_KLD))
+    # print("%0.2f  JI Weighted KLD" % (JI_weighted_KLD))
+    # print("%0.2f  JI refOG Weighted KLD" % (JI_refog_weighted_KLD))
+    # print()
 
     V_complete = V_to_V_complete(V, total_missing_genes_set)
     AMI, AVI, ARI = prime_information(U, V_complete, N)
 
     # print("%0.2f  Reduced Mutual Information (global)" % (NRMI))
-    print("%0.2f  Adjusted Mutual Information (global)" % (AMI))
-    print("%0.2f  Adjusted Variation of Information (global)" % (AVI))
-    print("%0.2f  Ajusted Rand Index (global)" % (ARI))
+    print("%0.5f  Adjusted Mutual Information (global)" % (AMI))
+    print("%0.5f  Adjusted Variation of Information (global)" % (AVI))
+    print("%0.5f  Ajusted Rand Index (global)" % (ARI))
     print()
 
     # print(missing_genes_dict, missing_genes_count_dict, missing_genes_proportion_dict)
@@ -1025,17 +1253,17 @@ if __name__ == "__main__":
     # AMI = adjusted_mutual_information(U, V, N, list_products)
     # print(AMI)
 
-    # U_item_dict = rearange(U)
-    # V_item_dict = rearange(V)
+    U_item_dict = rearange(U)
+    V_item_dict = rearange(V)
+    label_true_list = []
+    label_pred_list = []
+    for item, label_true in U_item_dict.items():
+        label_true_list.append(label_true)
+        label_pred_list.append(V_item_dict[item])
 
-    # label_true_list = []
-    # label_pred_list = []
-    # for item, label_true in U_item_dict.items():
-    #     label_true_list.append(label_true)
-    #     label_pred_list.append(V_item_dict[item])
+    print(cluster.adjusted_mutual_info_score(label_true_list, label_pred_list))
 
-    # print(cluster.adjusted_mutual_info_score(label_true_list, label_pred_list))
-    # print(cluster.rand_score(label_true_list, label_pred_list))
+    print(cluster.rand_score(label_true_list, label_pred_list))
     # print(rand_index(U, V, N, list_products, ri_type="normal"))
     # print(rand_index(U, V, N, list_products))
-    # print(cluster.adjusted_rand_score(label_true_list, label_pred_list))
+    print(cluster.adjusted_rand_score(label_true_list, label_pred_list))

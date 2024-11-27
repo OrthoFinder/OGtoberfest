@@ -3,7 +3,7 @@ import pathlib
 from collections import Counter
 from typing import Optional, List, Set, Tuple, Dict 
 from ogtoberfest import utils
-
+from ogtoberfest import scorefuncs as sf
 
 
 def get_expected_genes(
@@ -153,3 +153,15 @@ def get_predog_species_dict(predogs_reformated):
         for refog_key, predogs in predogs_reformated.items()
     }
     return predog_species_dict
+
+def add_missing_genes(
+        missing_genes_dict: Dict[str, Set[str]],
+        overlap_dict: Dict[str, Dict[str, Set[str]]]
+    ):
+    
+    complete_predog_dict = {
+        refog_key: sf.V_to_V_complete(overlap_dict[refog_key], missing_genes_set)
+        for refog_key, missing_genes_set in missing_genes_dict.items()
+    }
+    return complete_predog_dict
+        

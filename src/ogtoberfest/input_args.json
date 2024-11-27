@@ -186,8 +186,9 @@
             "help": "",
             "limit": "",
             "valid_options": [
+                "Missing Species (%)",
                 "Fusion (PredOGs)",
-                "Fision (PredOGs)",
+                "Fission (PredOGs)",
                 "Weighted Avg F1-score",
                 "Weighted Avg Fowlkes-Mallows Index",
                 "Weighted Avg Jaccard Index",
@@ -206,7 +207,10 @@
                 "Macro Disimilarity",
                 "Gene Pair Recall",
                 "Gene Pair Precision",
-                "Gene Pair F1-score"          
+                "Gene Pair F1-score",
+                "Effective Size",
+                "Runtime"
+
             ],
             "error_message": "Unsuppoted input global scores",
             "category": "public"
@@ -237,13 +241,13 @@
             ],
             "name": "global_scores",
             "default": [
-                "Missing PredOGs",
-                "Missing Genes",
-                "Fusion (RefOGs)",
-                "Fision (RefOGs)",
-                "Weighted Avg Recall", 
-                "Weighted Avg Precision",
-                "Avg Entropy"
+                "Missing RefOGs (%)",
+                "Missing Genes (%)",
+                "RefOG Fusions (%)",
+                "RefOG Fissions (%)",
+                "Recall", 
+                "Precision",
+                "Entropy"
             ],
             "action": "",
             "description": "Global scores for benchmarking",
@@ -251,6 +255,50 @@
             "limit": "",
             "valid_options": "",
             "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-ls",
+                "--local-scores"
+            ],
+            "name": "local_scores",
+            "default": [
+                "Weighted Avg Recall",
+                "Weighted Avg Precision",
+                "Weighted Avg Jaccard Index",
+                "Weighted Avg Dissimilarity",
+                "Missing Genes Percentage",
+                "Missing Species",
+                "Effective Size",
+                "Entropy"
+            ],
+            "action": "",
+            "description": "local scores for benchmarking",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-als",
+                "--add-local-score"
+            ],
+            "name": "additional_local_scores",
+            "default": "",
+            "action": "",
+            "description": "Add additional local score",
+            "help": "",
+            "limit": "",
+            "valid_options": [
+                "Weighted Avg F1-score",
+                "Weighted Avg Fowlkes-Mallows Index",
+                "Weighted Avg Dissimilarity",
+                "Missing Genes Count"
+            ],
+            "error_message": "Unsuppoted input local scores",
             "category": "public"
         },
         {
@@ -264,7 +312,7 @@
             "description": "Combined Global scores for benchmarking",
             "help": "",
             "limit": "",
-            "valid_options": ["Rank Score", "Avg Score", "Z-score"],
+            "valid_options": ["Rank Score", "Avg Score", "RMS Score", "Z-score"],
             "error_message": "",
             "category": "public"
         },
@@ -280,6 +328,44 @@
             "help": "",
             "limit": "",
             "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-m",
+                "--metric"
+            ],
+            "name": "metric",
+            "default": "jensenshannon",
+            "action": "",
+            "description": "Pairwise distances between observations in n-dimensional space.",
+            "help": "",
+            "limit": "",
+            "valid_options": [
+                "euclidean", 
+                "minkowski", 
+                "cityblock",
+                "seculidean",
+                "sqeuclidean",
+                "cosine",
+                "correlation",
+                "hamming",
+                "jaccard",
+                "jensenshannon",
+                "chebyshev",
+                "canberra",
+                "braycurtis",
+                "mahalanobis",
+                "yule",
+                "dice",
+                "kulczynski1",
+                "rogerstanimoto",
+                "russellrao",
+                "sokalmichener",
+                "sokalsneath",
+                "kulczynski1"
+            ],
             "error_message": "",
             "category": "public"
         }

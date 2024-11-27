@@ -1,15 +1,16 @@
 import numpy as np
 import scipy.stats as ss
+from scipy.spatial import distance
 from typing import Dict, List, Set, Optional
 from ogtoberfest import utils
 from ogtoberfest import scorefuncs as sf
 from ogtoberfest import orthogroups_analyser as opa
+import itertools
 
-
-def combine_scores(scores_list, score_names, precision=3, avg_method="mean"):
+def combine_scores(scores_list, score_names, precision=3, avg_method="RMS Score"):
 
     score_dict = dict(zip(score_names, scores_list))
-    if avg_method == "mean":
+    if avg_method == "Avg Score":
         combined_scores = 0.0
         for name, score in score_dict.items():
             if "recall" in name.lower() \
@@ -24,7 +25,7 @@ def combine_scores(scores_list, score_names, precision=3, avg_method="mean"):
 
         combined_scores /= len(scores_list)
 
-    elif avg_method == "rms":
+    elif avg_method == "RMS Score":
         combined_scores = 0.0
         for name, score in score_dict.items():
             if "recall" in name.lower() \
@@ -42,7 +43,7 @@ def combine_scores(scores_list, score_names, precision=3, avg_method="mean"):
     return np.round(combined_scores, precision)
 
 
-def rand_score(global_score_dict, score_names, precision=3, rank_method="min"):
+def rank_score(global_score_dict, score_names, precision=3, rank_method="min"):
     method, scores = zip(*global_score_dict.items())
     filtered_score = []
     for score in scores:
@@ -54,7 +55,10 @@ def rand_score(global_score_dict, score_names, precision=3, rank_method="min"):
                     or "f1-score" in name.lower() \
                         or "index" in name.lower():
                 score_list.append(1 - score / 100)
-            elif "entropy" in name.lower() or "disimilarity" in name.lower():
+            elif "entropy" in name.lower() \
+                or "disimilarity" in name.lower() \
+                or "size" in name.lower() \
+                or "time" in name.lower():
                 score_list.append(score)
             else:
                 score_list.append(score / 100)
@@ -123,6 +127,14 @@ def get_scores(
     num_species_predog_dict_raw = opa.get_num_species_dict(predog_species_dict_raw)
     num_species_predog_dict_overlap = opa.get_num_species_dict(predog_species_dict_overlap)
     num_species_predog_dict_prime = opa.get_predog_num_species_dict(predog_species_dict_prime)
+    
+    missing_species_dict, missing_species_num_dict = sf.check_missing_species(refog_species_dict, predog_species_dict_prime)
+    missing_species_refogs_num = np.sum([
+        1 if num != 0 else 0
+        for num in missing_species_num_dict.values()
+    ])
+
+    missing_species_refogs = missing_species_refogs_num / len(ref_ogs)
 
     total_num_species_refog = len(set(utils.flatten_list_of_list([*refog_species_dict.values()])))
 
@@ -166,7 +178,8 @@ def get_scores(
 
     missing_predogs_list = sf.missing_predogs(V_prime)
     missing_predogs = len(missing_predogs_list) / len(ref_ogs)
-    print("%0.1f%%  Missing PrefOGs" % (100.0 * missing_predogs))
+    print("%0.1f%%  Missing RefOGs" % (100.0 * missing_predogs))
+    print("%0.1f%%  Missing Speciess" % (100.0 * missing_species_refogs))
 
     (
         total_missing_genes,
@@ -185,17 +198,17 @@ def get_scores(
         fusion_predog_score = len(fusion_predog_dict) / len(V)
     else:
         fusion_predog_score = 0.0
-    print("%0.1f%%  Fussion (RefOG)" % (100.0 * fusion_refog_score))
-    # print("%0.1f%%  Fussion (PredOG)" % (100.0 * fusion_predog_score))
+    print("%0.1f%%  RefOG Fusions" % (100.0 * fusion_refog_score))
+    # print("%0.1f%%  PredOG Fusion" % (100.0 * fusion_predog_score))
 
-    fision_refog_set, fision_predog_set = sf.fision(ref_ogs, V_prime)
-    fision_refog_score = len(fision_refog_set) / len(ref_ogs)
+    fission_refog_set, fission_predog_set = sf.fission(ref_ogs, V_prime)
+    fission_refog_score = len(fission_refog_set) / len(ref_ogs)
     if len(V) != 0:
-        fision_predog_score = len(fision_predog_set) / len(V)
+        fission_predog_score = len(fission_predog_set) / len(V)
     else:
-        fision_predog_score = 0.0
-    print("%0.1f%%  Fission (RefOG)" % (100.0 * fision_refog_score))
-    # print("%0.1f%%  Fission (PredOG)" % (100.0 * fision_predog_score))
+        fission_predog_score = 0.0
+    print("%0.1f%%  RefOG Fissions" % (100.0 * fission_refog_score))
+    # print("%0.1f%%  PredOG Fissions" % (100.0 * fission_predog_score))
     # print()
 
     micro_recall, micro_precision, \
@@ -293,34 +306,35 @@ def get_scores(
         "n_species_predogs_refogs": num_species_predog_dict_prime,
     }
 
-
     local_score_dict = {
         "Entropy": entropy_dict,
         "Weighted Avg Recall": weighted_recall_dict,
         "Weighted Avg Precision": weighted_precision_dict,
         "Weighted Avg F1-score": weighted_f1score_dict,
-        "Weighted Avg Fowlkes-Mallows Index":weighted_fowlkes_mallows_dict,
+        "Weighted Avg Fowlkes-Mallows Index": weighted_fowlkes_mallows_dict,
         "Weighted Avg Jaccard Index": weighted_JI_dict,
         "Weighted Avg Dissimilarity": weighted_dissimilarity_dict,
         "Effective Size": effective_size_JI_weighted_dict,
         "Missing Genes Count": missing_genes_count_dict,
         "Missing Genes Percentage": missing_genes_per_dict,
+        "Missing Species": missing_species_num_dict,
     }
 
     global_score_dict = {
-        "Missing PredOGs": np.round(100.0 * missing_predogs, precision),
-        "Missing Genes": np.round(100.0 * missing_genes, precision),
-        "Fusion (RefOGs)": np.round(100.0 * fusion_refog_score, precision),
-        "Fision (RefOGs)": np.round(100.0 * fision_refog_score, precision),
-        "Fusion (PredOGs)": np.round(100.0 * fusion_predog_score, precision),
-        "Fision (PredOGs)": np.round(100.0 * fision_predog_score, precision),
-        "Weighted Avg Recall": np.round(100.0 * avg_weighted_recall, precision),
-        "Weighted Avg Precision": np.round(100.0 * avg_weighted_precision, precision),
-        "Weighted Avg F1-score": np.round(100.0 * avg_weighted_f1score, precision),
-        "Weighted Avg Fowlkes-Mallows Index": np.round(100. * avg_weighted_fowlkes_mallows, precision),
-        "Weighted Avg Jaccard Index": np.round(100. * avg_weighted_JI, precision),
-        "Weighted Avg Disimilarity": np.round (100. * avg_weighted_dissimilarity, precision),
-        "Avg Entropy": np.round(total_entropy, precision),
+        "Missing RefOGs (%)": np.round(100.0 * missing_predogs, precision),
+        "Missing Species (%)": np.round(100.0 * missing_species_refogs, precision),
+        "Missing Genes (%)": np.round(100.0 * missing_genes, precision),
+        "RefOG Fusions (%)": np.round(100.0 * fusion_refog_score, precision),
+        "RefOG Fissions (%)": np.round(100.0 * fission_refog_score, precision),
+        "PredOG Fusions (%)": np.round(100.0 * fusion_predog_score, precision),
+        "PredOG Fissions (%)": np.round(100.0 * fission_predog_score, precision),
+        "Recall": np.round(100.0 * avg_weighted_recall, precision),
+        "Precision": np.round(100.0 * avg_weighted_precision, precision),
+        "F1-score": np.round(100.0 * avg_weighted_f1score, precision),
+        "Fowlkes-Mallows Index": np.round(100. * avg_weighted_fowlkes_mallows, precision),
+        "Jaccard Index": np.round(100. * avg_weighted_JI, precision),
+        "Disimilarity": np.round (100. * avg_weighted_dissimilarity, precision),
+        "Entropy": np.round(total_entropy, precision),
         "Macro Recall": np.round(100. * macro_recall, precision),
         "Macro Precision": np.round(100. * macro_precision, precision),
         "Macro F1-score": np.round(100. * macro_f1score, precision),
@@ -337,79 +351,113 @@ def get_scores(
         "Gene Pair Precision": np.round(100. * gene_pair_precision, precision),
         "Gene Pair F1-score": np.round(100. * gene_pair_f1score, precision),
     }
+
     predogs_info = {
         "Missing Genes": missing_genes_dict,
         "Missing Genes Set": total_missing_genes_set,
         "PredOGs Info": all_score_dict,
-        "True Positives": all_TP_dict,
+        "Overlapped Genes": all_TP_dict,
+        "Missing Species": missing_species_dict,
     }
-    # scores = [
-    #     np.round(100.0 * missing_predogs, precision),
-    #     np.round(100.0 * missing_genes, precision),
-    #     np.round(100.0 * fusion_refog_score, precision),
-    #     np.round(100.0 * fision_refog_score, precision),
-    #     np.round(100.0 * avg_weighted_recall, precision),
-    #     np.round(100.0 * avg_weighted_precision, precision),
-    #     np.round(total_entropy, 2),
-    # ]
 
-    # if isinstance(global_additional_scores, list):
     return global_stats_dict, local_stats_dict, global_score_dict, local_score_dict, predogs_info
 
 
-def local_scores(
-        ref_ogs,
-        V_prime,
-        weighted_recall_dict,
-        weighted_precision_dict,
-        weighted_f1score_dict,
-        entropy_dict,
-        missing_genes_dict,
-        missing_genes_count_dict,
-        missing_genes_proportion_dict,
-        effective_size_precision_weighted_dict,
-        effective_size_JI_weighted_dict,
-    ):
 
-    round_precision = 1
-    data_dict = [
-        (
-            refog_key,
-            len(refog),
-            len(V_prime[refog_key]),
-            np.round(100.0 * weighted_recall_dict[refog_key], round_precision),
-            np.round(100.0 * weighted_precision_dict[refog_key], round_precision),
-            np.round(100.0 * weighted_f1score_dict[refog_key], round_precision),
-            np.round(entropy_dict[refog_key], 2),
-            missing_genes_count_dict[refog_key],
-            np.round(100.0 * missing_genes_proportion_dict[refog_key], round_precision),
-            int(effective_size_precision_weighted_dict[refog_key]),
-            int(effective_size_JI_weighted_dict[refog_key]),
-            missing_genes_dict[refog_key],
-        )
-        for refog_key, refog in ref_ogs.items()
-    ]
+def corr_vi_analysis(
+        method_predogs_dict, 
+        refogs_ngenes_dict,
+        filewriter,
+        precision = 3,
+):
 
-    colnames = [
-        "RefOGs",
-        "RefOG_Size",
-        "nPredictedOGs",
-        "avg_Recall (%)",
-        "avg_Precision (%)",
-        "avg_F1-score (%)",
-        "Entropy",
-        "TotalMissingGenes",
-        "MissingGenes (%)",
-        "EffectiveSize (JI_weighted)",
-        "Missing_Genes",
-    ]
+    methods = [*method_predogs_dict.keys()]
+    methods_product = [*itertools.product(methods, methods)]
+    VI_dict = {m1: {m2: {} for m2 in methods} for m1 in methods}
+    avg_VI_dict = {m1: {m2: {} for m2 in methods} for m1 in methods}
+    for m1, m2 in methods_product:
+        VI_dict[m1][m2] = {}
+        VI_list = [] 
+        nrefog_list = []
+        for refog_key, nrefog in refogs_ngenes_dict.items():
+            predog_1 = method_predogs_dict[m1][refog_key]
+            predog_2 = method_predogs_dict[m2][refog_key]
+            list_products = [*itertools.product(predog_1.items(), predog_2.items())]
+            VI = sf.variation_of_information(
+                predog_1, 
+                predog_2, 
+                nrefog, 
+                list_products
+            )
 
-    df = pd.DataFrame.from_records(data_dict, columns=colnames)
-    # print(matched_df[["RefOG_intersection_PredOG", "min_FN", "FP"]])
-    df.sort_values(
-        by=["avg_Recall (%)", "avg_Precision (%)", "Entropy"],
-        inplace=True,
-        ascending=[False, False, True],
+            VI_dict[m1][m2][refog_key] = np.round(VI, precision)
+            VI_list.append(VI)
+            nrefog_list.append(nrefog)
+        VI_arr = np.array(VI_list)
+        nrefog_arr = np.array(nrefog_list)
+        avg_VI_dict[m1][m2] = np.round(np.average(VI_arr, weights=nrefog_arr), precision)
+        
+
+    filewriter.save_global_VI_scores(
+        avg_VI_dict, 
+    )
+    
+    filewriter.save_local_VI_scores(
+        VI_dict
     )
 
-    return df
+def corr_dist_analysis(
+    local_scores_dict,
+    local_scores,
+    filewriter,
+    metric,
+    precision = 3,
+):
+    
+    methods = [*local_scores_dict.keys()]
+
+    metric_dict = {
+        score_name: np.array([
+            [*local_scores_dict[m1][score_name].values()] for m1 in methods
+            ])
+        for score_name in local_scores
+    }
+
+    for score, score_arr in metric_dict.items():
+        dist_arr = distance.squareform(distance.pdist(score_arr, metric)).round(precision)
+        filewriter.save_dist_metrics(metric, score, np.nan_to_num(dist_arr), methods)
+
+
+def distribution_analyser(ref_dict, compare_dict, metric):
+
+    dist_funcs = {name: getattr(distance, name) for name in dir(distance) if "__" not in name}
+
+    ref_list = []
+    compare_list = []
+    for ref_key, ref_val in ref_dict.items():
+        ref_list.append(ref_val)
+        compare_val = compare_dict.get(ref_key)
+        compare_val = compare_val if compare_val is not None else 0
+        compare_list.append(compare_val)
+
+    dfunc = dist_funcs.get(metric)
+    dist_val = np.nan
+    if dfunc is not None:
+        dist_val = dfunc(ref_list, compare_list)
+    return dist_val
+        
+
+    
+    
+        
+
+
+            
+
+
+
+
+
+
+
+
