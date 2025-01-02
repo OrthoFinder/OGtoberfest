@@ -82,7 +82,7 @@ def create_options(args: List[str], task=Optional[CMD_MANAGER]):
     usr_input_args = []
     while args:
         arg = args.pop(0)
-
+ 
         if arg == "--show-args":
             show_args = True
 
@@ -147,9 +147,9 @@ def create_options(args: List[str], task=Optional[CMD_MANAGER]):
         prefix = "scores"
 
     handle_missing_path_args(manager, output_path_name, prefix, args_list, task)
-
-    if manager.options.input_path.parent.name == "OrthoBench":# and task == "benchmark":
-        read_default_args(manager, args_list, usr_input_args)
+    
+    # if manager.options.input_path.parent.name == "OrthoBench":# and task == "benchmark":
+    read_default_args(manager, args_list, usr_input_args)
         # if not hasattr(manager.options, "outgroups"):
         #     arg_dict = read_args_from_arg_list(args_list, "--outgroups")
         #     manager.options.outgroups = arg_dict["default"]
@@ -190,9 +190,9 @@ def read_default_args(manager, args_list, usr_input_args: List[str]):
         arg_name = arg_dict["name"]
         arg_value = arg_dict["default"]
 
-        if "input_path" in arg_name or "output_path" in arg_name:
+        if "input_path" == arg_name or "output_path" == arg_name:
             continue
-        elif "refog_path" in arg_name or "database_path" in arg_name:
+        elif "path" in arg_name:
             arg_value = CWD / arg_value
             arg_value = arg_value.resolve()
 

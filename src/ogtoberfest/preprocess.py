@@ -44,11 +44,20 @@ def orthomcl(input_file, output_file):
                 line = line.strip()
                 gname = line.split(": ", 1)[0]
 
-                genes = [
-                    item.strip().replace("|", ".").replace("adjusted_", "")
-                    for item in line.split(": ", 1)[1].split(" ")
-                    if "combined" not in item
-                ]
+                # genes = [
+                #     item.strip().replace("|", ".").replace("adjusted_", "")
+                #     for item in line.split(": ", 1)[1].split(" ")
+                #     if "combined" not in item
+                # ]
+
+                genes = []
+                for item in line.split(": ", 1)[1].split(", "):
+                    if "combined" not in item:
+                        gene = item.strip().replace("|", ".").replace("adjusted_", "")
+                        if "Branchiostoma_lanceolatum" in gene or "Schistosoma_mansoni" in gene:
+                            continue 
+                        genes.append(gene)
+
                 if len(genes) > 1:
                     og = gname + ": " + ", ".join(genes)
                     writer.write(og + "\n")
@@ -132,7 +141,14 @@ def sonicparanoid(input_file, output_file):
                                 )
                             )
                         else:
-                            genes.append(gene)
+                            genes.append(
+                                ", ".join(
+                                    [
+                                        g
+                                        for g in re.split(" |,", gene)
+                                        if len(g) != 0
+                                    ]
+                                ))
                     og = predog_key + ": " + ", ".join(genes)
                     writer.write(og + "\n")
 
@@ -165,7 +181,13 @@ def broccoli_v1(input_file, output_file):
                                 )
                             )
                         else:
-                            genes.append(gene)
+                            genes.append( ", ".join(
+                                    [
+                                        g
+                                        for g in re.split(" |,", gene)
+                                        if len(g) != 0
+                                    ]
+                                ))
                     og = predog_key + ": " + ", ".join(genes)
                     writer.write(og + "\n")
 
@@ -285,3 +307,24 @@ def fastoma(input_file, output_file, protemes_dir: pathlib.Path):
         for predog_key, genes in predog_dict.items():
             og = predog_key + ": " + ", ".join(genes)
             writer.write(og + "\n")
+
+
+def swiftortho(input_file, output_file):
+    predog_base_name = "PredOG%07d"
+    with open(output_file, "w") as writer:
+        with open(input_file, "r") as reader:
+            for n, line in enumerate(reader):
+                line = line.strip()
+                predog_key = predog_base_name % n
+                genes = []
+                for gene in line.split("\t"):
+                    if len(gene) == 0:
+                        continue
+                    species, gene = gene.split("|")
+                    if species == gene.split(".", 1)[0]:
+                        genes.append(gene)
+                    else:
+                        genes.append(species + "." + gene)
+                    
+                og = predog_key + ": " + ", ".join(genes)
+                writer.write(og + "\n")

@@ -802,6 +802,8 @@ def V_raw_to_V_prime(U, V_raw):
     for refog_key, refog in U.items():
         V_prime[refog_key] = {}
         for predog_key, predog in V_raw.items():
+            if predog_key == "unassigned_genes":
+                continue
             overlap = refog & predog
             if len(overlap) != 0:
                 if predog_key not in V_prime[refog_key]:
@@ -815,7 +817,10 @@ def V_prime_to_V(V_prime):
         Have the same format of V_raw, but it only contains the predog that have some overlaps with the refogs.
     """
 
-    V = {predog_key: predog for predog_dict in V_prime.values() for predog_key, predog in predog_dict.items()}
+    V = {
+        predog_key: predog 
+        for predog_dict in V_prime.values() for predog_key, predog in predog_dict.items()
+    }
     return V
 
 
@@ -911,26 +916,84 @@ def micro_scores(U, V_prime, n):
     )
 
 
-def fusion(V_prime, V):
+def fusion(ref_ogs, V_prime, V):
     fusion_predog_dict = {}
     fusion_refog_set = set()
-    for predog_key in V:
-        refog_key_set = set([refog_key for refog_key, predog_dict in V_prime.items() if predog_key in predog_dict])
-        if len(refog_key_set) > 1:
-            fusion_predog_dict[predog_key] = refog_key_set
-            fusion_refog_set = fusion_refog_set.union(refog_key_set)
-    return fusion_refog_set, fusion_predog_dict
+
+    for predog_key, predog in V.items():
+        refog_key_set_multi = set()
+
+        # for refog_key, refog in ref_ogs.items():
+        #     if len(refog & predog) != 0:
+        #         refog_key_set_multi.add(refog_key)
+
+        # if len(refog_key_set_multi) > 1:
+        #     fusion_predog_dict[predog_key] = refog_key_set_multi
+        #     fusion_refog_set = fusion_refog_set.union(refog_key_set_multi)
+        # elif len(refog_key_set_multi) == 1:
+        #     refog_key = refog_key_set_multi.pop()
+        #     refog = ref_ogs[refog_key]
+        #     if len(predog - refog) > 0 and len(refog - predog) == 0:
+        #         refog_key_set_multi.add(refog_key)
+
+        #     fusion_predog_dict[predog_key] = refog_key_set_multi
+        #     fusion_refog_set = fusion_refog_set.union(refog_key_set_multi)
+
+
+        refog_key_set_multi = set([
+            refog_key for refog_key, predog_dict in V_prime.items() 
+            if predog_key in predog_dict
+        ])
+
+        if len(refog_key_set_multi) > 1:
+            fusion_predog_dict[predog_key] = refog_key_set_multi
+            fusion_refog_set = fusion_refog_set.union(refog_key_set_multi)
+
+    # for refog_key, refog in ref_ogs.items():
+    #     for predog_key, predog in V.items():
+    #         if len(predog & refog) != 0:
+    #             if len(predog - refog) > 0 and len(refog - predog) == 0:
+    #                 fusion_refog_set.add(refog_key)
+                
+    #                 if predog_key not in fusion_predog_dict:
+    #                     fusion_predog_dict[predog_key] = set([refog_key])
+    #                 else:
+    #                     fusion_predog_dict[predog_key].add(refog_key)
+
+    
+    for refog_key, predog_dict in V_prime.items():
+        if len(predog_dict) == 1:
+            predog_key = [*predog_dict.keys()][0]
+            if len(predog_dict[predog_key] - ref_ogs[refog_key]) > 0 \
+                and len(ref_ogs[refog_key] - predog_dict[predog_key]) == 0:
+                fusion_refog_set.add(refog_key)
+            
+                if predog_key not in fusion_predog_dict:
+                    fusion_predog_dict[predog_key] = set([refog_key])
+        
+
+    fusion_refog_bool_dict = {
+        refog_key: 1 if refog_key in fusion_refog_set else 0
+        for refog_key in ref_ogs.keys() 
+        
+    }
+    
+    return fusion_refog_set, fusion_predog_dict, fusion_refog_bool_dict
 
 
 def fission(U, V_prime):
     fission_predog_set = set()
     fission_refog_set = set()
+    fission_refog_bool_dict = {}
     for refog_key in U:
         if len(V_prime[refog_key]) > 1:
             fission_refog_set.add(refog_key)
             fission_predog_set = fission_predog_set.union(set([*V_prime[refog_key].keys()]))
+            fission_refog_bool_dict[refog_key] = 1
+        else:
+            fission_refog_bool_dict[refog_key] = 0
 
-    return fission_refog_set, fission_predog_set
+    return fission_refog_set, fission_predog_set, fission_refog_bool_dict
 
 
 def calculate_benchmarks_pairwise(
@@ -1041,17 +1104,21 @@ def calculate_benchmarks_pairwise(
 
     return TP, FP, FN, recall, pres, f
 
-def check_missing_species(refog_species_dict, predog_species_dict):
+def check_missing_species(refog_species_dict, predog_species_dict, num_round):
     missing_species_dict = {}
-    missing_species_num_dict = {}
+    missing_species_count_dict = {}
+    missing_species_percent_dict = {}
     
     for refog_key, refog_species in refog_species_dict.items():
+        refog_species_num = len(refog_species)
         for predog_key, predog_species in predog_species_dict[refog_key].items():
             refog_species.difference_update(predog_species)
         missing_species_dict[refog_key] = refog_species
-        missing_species_num_dict[refog_key] = len(refog_species)
+        missing_species_count_dict[refog_key] = len(refog_species)
+        missing_species_percent_dict[refog_key] = \
+            np.round(len(refog_species) / refog_species_num, num_round)
     
-    return  missing_species_dict, missing_species_num_dict
+    return  missing_species_dict, missing_species_count_dict, missing_species_percent_dict
 
             
   

@@ -128,10 +128,11 @@ def get_scores(
     num_species_predog_dict_overlap = opa.get_num_species_dict(predog_species_dict_overlap)
     num_species_predog_dict_prime = opa.get_predog_num_species_dict(predog_species_dict_prime)
     
-    missing_species_dict, missing_species_num_dict = sf.check_missing_species(refog_species_dict, predog_species_dict_prime)
+    missing_species_dict, missing_species_count_dict, missing_species_percent_dict = \
+        sf.check_missing_species(refog_species_dict, predog_species_dict_prime, precision)
     missing_species_refogs_num = np.sum([
         1 if num != 0 else 0
-        for num in missing_species_num_dict.values()
+        for num in missing_species_count_dict.values()
     ])
 
     missing_species_refogs = missing_species_refogs_num / len(ref_ogs)
@@ -192,7 +193,7 @@ def get_scores(
     missing_genes = total_missing_genes / N
     print("%0.1f%%  Missing Genes" % (100.0 * missing_genes))
 
-    fusion_refog_set, fusion_predog_dict = sf.fusion(V_prime, V)
+    fusion_refog_set, fusion_predog_dict, fusion_refog_bool_dict = sf.fusion(ref_ogs, V_prime, V)
     fusion_refog_score = len(fusion_refog_set) / len(ref_ogs)
     if len(V) != 0:
         fusion_predog_score = len(fusion_predog_dict) / len(V)
@@ -201,7 +202,7 @@ def get_scores(
     print("%0.1f%%  RefOG Fusions" % (100.0 * fusion_refog_score))
     # print("%0.1f%%  PredOG Fusion" % (100.0 * fusion_predog_score))
 
-    fission_refog_set, fission_predog_set = sf.fission(ref_ogs, V_prime)
+    fission_refog_set, fission_predog_set, fission_refog_bool_dict = sf.fission(ref_ogs, V_prime)
     fission_refog_score = len(fission_refog_set) / len(ref_ogs)
     if len(V) != 0:
         fission_predog_score = len(fission_predog_set) / len(V)
@@ -253,6 +254,25 @@ def get_scores(
         effective_size_JI_weighted_dict,
         effective_size_JI_refog_weighted_dict,
     ) = sf.macro_and_weighted_avg_scores(ref_ogs, V_prime, N, precision)
+
+    fusion_refog_genes_dict = {
+        refog_key: {
+            predog_key: tp
+            for predog_key, tp in tp_dict.items()
+            if predog_key in fusion_predog_dict
+        }
+        if refog_key in fusion_refog_set else {}
+        for refog_key, tp_dict in all_TP_dict.items()
+    }
+
+    fission_refog_genes_dict = {
+        refog_key: {
+            predog_key: tp
+            for predog_key, tp in tp_dict.items()
+        }
+        if refog_key in fission_refog_set else {}
+        for refog_key, tp_dict in all_TP_dict.items()
+    }
 
     # print("%0.1f%%  macro Recall" % (100. * macro_recall))
     # print("%0.1f%%  macro Precision" % (100. * macro_precision))
@@ -314,10 +334,16 @@ def get_scores(
         "Weighted Avg Fowlkes-Mallows Index": weighted_fowlkes_mallows_dict,
         "Weighted Avg Jaccard Index": weighted_JI_dict,
         "Weighted Avg Dissimilarity": weighted_dissimilarity_dict,
-        "Effective Size": effective_size_JI_weighted_dict,
-        "Missing Genes Count": missing_genes_count_dict,
         "Missing Genes Percentage": missing_genes_per_dict,
-        "Missing Species": missing_species_num_dict,
+        "Missing Species Percentage": missing_species_percent_dict,
+    }
+
+    local_properties_dict = {
+        "Missing Species Count": missing_species_count_dict,
+        "Missing Genes Count": missing_genes_count_dict,
+        "Effective Size": effective_size_JI_weighted_dict,
+        "Fusion Bool": fusion_refog_bool_dict,
+        "Fission Bool": fission_refog_bool_dict,
     }
 
     global_score_dict = {
@@ -352,15 +378,18 @@ def get_scores(
         "Gene Pair F1-score": np.round(100. * gene_pair_f1score, precision),
     }
 
-    predogs_info = {
+    other_info = {
         "Missing Genes": missing_genes_dict,
         "Missing Genes Set": total_missing_genes_set,
         "PredOGs Info": all_score_dict,
         "Overlapped Genes": all_TP_dict,
         "Missing Species": missing_species_dict,
+        "Fusion Genes": fusion_refog_genes_dict,
+        "Fission Genes": fission_refog_genes_dict,
     }
 
-    return global_stats_dict, local_stats_dict, global_score_dict, local_score_dict, predogs_info
+    return global_stats_dict, local_stats_dict, global_score_dict, \
+        local_properties_dict, local_score_dict, other_info
 
 
 

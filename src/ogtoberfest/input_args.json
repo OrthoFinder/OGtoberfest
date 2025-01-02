@@ -109,6 +109,21 @@
         },
         {
             "flag": [
+                "-rs",
+                "--refog-stats"
+            ],
+            "name": "refog_stats_path",
+            "default": "./OrthoBench/reference_orthogroups_stats.tsv",
+            "action": "",
+            "description": "A file containing the reference orthogroups' statistics",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
                 "-urog",
                 "--uncertian-refog"
             ],
@@ -195,7 +210,7 @@
                 "Weighted Avg Disimilarity",
                 "Micro Recall",
                 "Micro Precision",
-                "Micro F1-score", 
+                "Micro F1-score",
                 "Micro Fowlkes-Mallows Index",
                 "Micro Jaccard Index",
                 "Micro Disimilarity",
@@ -210,7 +225,6 @@
                 "Gene Pair F1-score",
                 "Effective Size",
                 "Runtime"
-
             ],
             "error_message": "Unsuppoted input global scores",
             "category": "public"
@@ -245,7 +259,7 @@
                 "Missing Genes (%)",
                 "RefOG Fusions (%)",
                 "RefOG Fissions (%)",
-                "Recall", 
+                "Recall",
                 "Precision",
                 "Entropy"
             ],
@@ -269,8 +283,7 @@
                 "Weighted Avg Jaccard Index",
                 "Weighted Avg Dissimilarity",
                 "Missing Genes Percentage",
-                "Missing Species",
-                "Effective Size",
+                "Missing Species Percentage",
                 "Entropy"
             ],
             "action": "",
@@ -312,7 +325,12 @@
             "description": "Combined Global scores for benchmarking",
             "help": "",
             "limit": "",
-            "valid_options": ["Rank Score", "Avg Score", "RMS Score", "Z-score"],
+            "valid_options": [
+                "Rank Score",
+                "Avg Score",
+                "RMS Score",
+                "Z-score"
+            ],
             "error_message": "",
             "category": "public"
         },
@@ -343,8 +361,8 @@
             "help": "",
             "limit": "",
             "valid_options": [
-                "euclidean", 
-                "minkowski", 
+                "euclidean",
+                "minkowski",
                 "cityblock",
                 "seculidean",
                 "sqeuclidean",

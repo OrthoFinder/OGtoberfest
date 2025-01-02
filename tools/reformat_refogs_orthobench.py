@@ -6,6 +6,7 @@ import pandas as pd
 protemes_dir = r"./OrthoBench/orthobench_proteomes"
 refog_dir = r"./OrthoBench/RefOGs"
 reformated_refog = r"./OrthoBench/reference_orthogroups.tsv"
+refog_stats = r"./OrthoBench/reference_orthogroups_stats.tsv"
 log_path = r"./OrthoBench/iqtree2_logs"
 
 invariable_site_dict = {}
@@ -98,51 +99,54 @@ colnames = [
     "invariable_sites_proportion",
     "gamma_shape",
     "total_tree_length",
-    "Orthogroups",
+    # "Orthogroups",
 ]
 
 refog_stats_dict = {}
+with open(reformated_refog, "w") as writer:
 
-for refog_key, refog in updated_refogs_dict.items(): 
-    num_species = len(
-        set(
-            [gene.split(".", 1)[0] for gene in refog]
+    for refog_key, refog in updated_refogs_dict.items(): 
+        ogs_string = ", ".join(refog)
+        writer.write(refog_key + ": " + ogs_string + "\n")
+
+        num_species = len(
+            set(
+                [gene.split(".", 1)[0] for gene in refog]
+            )
         )
-    )
-    num_genes = len(refog)
+        num_genes = len(refog)
 
-    min_length = np.amin(
-        [species_gene_length[gene] for gene in refog]
-    )
+        min_length = np.amin(
+            [species_gene_length[gene] for gene in refog]
+        )
 
-    max_length = np.amax(
-        [species_gene_length[gene] for gene in refog]
-    )
+        max_length = np.amax(
+            [species_gene_length[gene] for gene in refog]
+        )
 
-    mean_length = np.mean(
-        [species_gene_length[gene] for gene in refog]
-    ).round().astype(int)
+        mean_length = np.mean(
+            [species_gene_length[gene] for gene in refog]
+        ).round().astype(int)
 
-    median_length = np.median(
-        [species_gene_length[gene] for gene in refog]
-    ).round().astype(int)
+        median_length = np.median(
+            [species_gene_length[gene] for gene in refog]
+        ).round().astype(int)
 
-    ogs_string = ", ".join(refog)
+        refog_stats_dict[refog_key] = (
+            num_species,
+            num_genes,
+            np.round(num_genes / num_species, 4),
+            np.round(float(total_tree_length[refog_key])/(2 * num_genes - 2), 4),
+            min_length,
+            max_length,
+            mean_length,
+            median_length,
+            invariable_site_dict[refog_key],
+            gamma_shape[refog_key],
+            total_tree_length[refog_key],
+            # ogs_string,
+        )
 
-    refog_stats_dict[refog_key] = (
-        num_species,
-        num_genes,
-        np.round(num_genes / num_species, 4),
-        np.round(float(total_tree_length[refog_key])/(2 * num_genes - 2), 4),
-        min_length,
-        max_length,
-        mean_length,
-        median_length,
-        invariable_site_dict[refog_key],
-        gamma_shape[refog_key],
-        total_tree_length[refog_key],
-        ogs_string,
-    )
 
 
 # tree_length/(2 * num_genes - 2) # mean branch length of the tree
@@ -152,4 +156,4 @@ df.reset_index(inplace=True)
 df.rename(columns={"index": "RefOGs"}, inplace=True)
 df.sort_values(by=["num_species", "num_genes", "min_length", "max_length"], 
                ascending=[False, False, True, True], inplace=True)
-df.to_csv(reformated_refog, sep="\t", index=False)
+df.to_csv(refog_stats, sep="\t", index=False)

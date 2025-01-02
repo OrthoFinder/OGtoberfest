@@ -118,6 +118,8 @@ def get_func_name_map():
         "fastoma": "fastoma",
         "fast": "fastoma",
         "fo": "fastoma",
+        "so": "swiftortho",
+        "swiftortho": "swiftortho",
     }
     return func_name
 
