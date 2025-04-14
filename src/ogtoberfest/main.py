@@ -37,7 +37,7 @@ def preprocess_file(
     ):
     if method_func_name is not None:
         method_func = funcs_dict[method_func_name]
-        if method_func_name in ["hieranoid", "fastoma", "broccoli"]:
+        if method_func_name in ["hieranoid", "fastoma", "broccoli", "orthohmm"]:
             method_func(
                 file,
                 manager.options.output_path / file.name,
@@ -121,11 +121,13 @@ def compute_scores(
 
 ## --------------------- Average scores ---------------------------------
     if manager.options.combined_global_score in ["Avg Score", "RMS Score"]:
-        combined_score = sa.combine_scores(global_scores, 
-                                            global_score_colnames[1:-1], 
-                                            precision=manager.options.precision,
-                                            avg_method=manager.options.combined_global_score
-                                            )
+        combined_score = sa.combine_scores(
+            global_scores, 
+            global_score_colnames[1:-1], 
+            precision=manager.options.precision,
+            avg_method=manager.options.combined_global_score,
+            weights=manager.options.global_scor_weights
+        )
         global_scores.append(np.round(combined_score, 3))
 
     global_scores_dict[file.name.rsplit(".", 1)[0]] = global_scores
@@ -151,6 +153,12 @@ def compute_scores(
         other_info["Fission Genes"],
     )
 
+## ----------------------------- Save overlap PredOGs ------------------------------------
+    filewriter.save_overlap_predogs(
+        local_filename, 
+        other_info["Overlap PredOGs"]
+    )
+
     return global_scores_dict, local_scores_dict, other_info, complete_predog_dict
 
 def main(args: Optional[List[str]] = None):
@@ -173,7 +181,7 @@ def main(args: Optional[List[str]] = None):
                 method = method.lower()
                 method_func_name = method_name_maps.get(method)
 
-                if method_func_name in ["hieranoid", "fastoma", "broccoli"] \
+                if method_func_name in ["hieranoid", "fastoma", "broccoli", "orthohmm"] \
                     and manager.options.database_path is None:
                     print(f"{method_func_name.titile()} needs to provide a database!")
                     continue
@@ -211,7 +219,7 @@ def main(args: Optional[List[str]] = None):
         #     filehandler.dist_path,
         #     )
 
-        if len(manager.options.additional_global_scores) != 0:
+        if manager.options.additional_global_scores is not None:
             if isinstance(manager.options.additional_global_scores, str):
                 manager.options.global_scores.append(manager.options.additional_global_scores)
             elif isinstance(manager.options.additional_global_scores, list):
@@ -221,7 +229,7 @@ def main(args: Optional[List[str]] = None):
             + manager.options.global_scores \
             + [manager.options.combined_global_score] 
 
-        if len(manager.options.additional_local_scores) != 0:
+        if manager.options.additional_local_scores is not None:
             if isinstance(manager.options.additional_local_scores, str):
                 manager.options.local_scores.append(manager.options.additional_local_scores)
             elif isinstance(manager.options.additional_global_scores, list):

@@ -204,7 +204,6 @@
                 "Missing Species (%)",
                 "Fusion (PredOGs)",
                 "Fission (PredOGs)",
-                "Weighted Avg F1-score",
                 "Weighted Avg Fowlkes-Mallows Index",
                 "Weighted Avg Jaccard Index",
                 "Weighted Avg Disimilarity",
@@ -273,6 +272,21 @@
         },
         {
             "flag": [
+                "-gsw",
+                "--global-score-weights"
+            ],
+            "name": "global_scor_weights",
+            "default": [],
+            "action": "",
+            "description": "Weights for global scores",
+            "help": "Input items should be separated by comma without space, and the weight for each score is specified after a colon. For instance, 'Missing RefOGs (%):0.1,Missing Genes (%):0.1'",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
                 "-ls",
                 "--local-scores"
             ],
@@ -280,6 +294,7 @@
             "default": [
                 "Weighted Avg Recall",
                 "Weighted Avg Precision",
+                "Weighted Avg F1-score",
                 "Weighted Avg Jaccard Index",
                 "Weighted Avg Dissimilarity",
                 "Missing Genes Percentage",
@@ -303,7 +318,7 @@
             "default": "",
             "action": "",
             "description": "Add additional local score",
-            "help": "",
+            "help": "Input items should be separated by comma without space. For instance, 'Weighted Avg F1-score,Missing Genes Count'",
             "limit": "",
             "valid_options": [
                 "Weighted Avg F1-score",
@@ -340,7 +355,7 @@
                 "--precision"
             ],
             "name": "precision",
-            "default": 3,
+            "default": "3",
             "action": "",
             "description": "decimal points",
             "help": "",

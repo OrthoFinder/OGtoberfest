@@ -7,8 +7,21 @@ from ogtoberfest import scorefuncs as sf
 from ogtoberfest import orthogroups_analyser as opa
 import itertools
 
-def combine_scores(scores_list, score_names, precision=3, avg_method="RMS Score"):
-
+def combine_scores(scores_list, 
+                   score_names, 
+                   precision=3, 
+                   avg_method="RMS Score",
+                   weights=None):
+    if weights is None:
+        weights = {
+            name: 1 / len(score_names)
+            for name in score_names
+        }
+    else:
+        weights = {
+            
+            
+        }
     score_dict = dict(zip(score_names, scores_list))
     if avg_method == "Avg Score":
         combined_scores = 0.0
@@ -17,13 +30,14 @@ def combine_scores(scores_list, score_names, precision=3, avg_method="RMS Score"
                 or "precision" in name.lower() \
                     or "f1-score" in name.lower() \
                         or "index" in name.lower():
-                combined_scores += score / 100
+                combined_scores += weights[name] * score / 100
             elif "entropy" in name.lower() or "disimilarity" in name.lower():
-                combined_scores += 1 - score
+                combined_scores += weights[name] * (1 - score)
             else:
-                combined_scores += 1 - score / 100
+                combined_scores += weights[name] * (1 - score / 100)
 
-        combined_scores /= len(scores_list)
+        # combined_scores /= len(scores_list)
+        combined_scores /= np.sum([*weights.values()])
 
     elif avg_method == "RMS Score":
         combined_scores = 0.0
@@ -32,13 +46,14 @@ def combine_scores(scores_list, score_names, precision=3, avg_method="RMS Score"
                 or "precision" in name.lower() \
                     or "f1-score" in name.lower() \
                         or "index" in name.lower():
-                combined_scores += (score / 100) ** 2
+                combined_scores += weights[name] * (score / 100) ** 2
             elif "entropy" in name.lower() or "disimilarity" in name.lower():
-                combined_scores += (1 - score) ** 2
+                combined_scores += weights[name] * (1 - score) ** 2
             else:
-                combined_scores += (1 - score / 100) ** 2
+                combined_scores += weights[name] * (1 - score / 100) ** 2
 
-        combined_scores /= len(scores_list)
+        # combined_scores /= len(scores_list)
+        combined_scores /= np.sum([*weights.values()])
         combined_scores = np.sqrt(combined_scores)
     return np.round(combined_scores, precision)
 
@@ -136,7 +151,6 @@ def get_scores(
     ])
 
     missing_species_refogs = missing_species_refogs_num / len(ref_ogs)
-
     total_num_species_refog = len(set(utils.flatten_list_of_list([*refog_species_dict.values()])))
 
     total_num_species_predog_raw = len(
@@ -148,14 +162,15 @@ def get_scores(
     )
 
     print("\nCalculating benchmarks:")
-    # print("%d  Number of RefOGs" % len(ref_ogs))
-    # print("%d  Number of species in RefOGs" % total_num_species_refog)
-    # print("%d  Number of genes in RefOGs" % N)
-    # print("%d  Number of PredOGs" % len(pred_ogs))
-    # print("%d  Number of species in PredOGs" % total_num_species_predog_raw)
-    # print("%d  Number of genes in PredOGs" % M_raw)
-    # print("%d  Number of species in PredOGs (overlap)" % total_num_species_predog_overlap)
-    # print("%d  Number of genes in PredOGs (overlap)" % M)
+    print("%d  Number of RefOGs" % len(ref_ogs))
+    print("%d  Number of species in RefOGs" % total_num_species_refog)
+    print("%d  Number of genes in RefOGs" % N)
+    print("%d  Number of PredOGs" % len(pred_ogs))
+    print("%d  Number of species in PredOGs" % total_num_species_predog_raw)
+    print("%d  Number of genes in PredOGs" % M_raw)
+    print("%d  Number of PredOGs (overlap)" % len(V))
+    print("%d  Number of species in PredOGs (overlap)" % total_num_species_predog_overlap)
+    print("%d  Number of genes in PredOGs (overlap)" % M)
 
     print()
 
@@ -386,6 +401,7 @@ def get_scores(
         "Missing Species": missing_species_dict,
         "Fusion Genes": fusion_refog_genes_dict,
         "Fission Genes": fission_refog_genes_dict,
+        "Overlap PredOGs": V,
     }
 
     return global_stats_dict, local_stats_dict, global_score_dict, \

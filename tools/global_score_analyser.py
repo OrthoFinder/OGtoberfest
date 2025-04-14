@@ -7,7 +7,7 @@ import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from met_brewer import met_brew
-colors = met_brew(name="VanGogh2", n=13)#, brew_type="continuous") Signac
+colors = met_brew(name="VanGogh2", n=20)#, brew_type="continuous") Signac
 sns.set_theme(style="white", context="talk")
 colors = colors[::-1]
 # colors = set([
@@ -208,14 +208,14 @@ def plot_barplot(df):
     #     fig.delaxes(axes[i])
     # plt.show()
 
-    fig, axes = plt.subplots(
-        nrows=nrows, 
-        ncols=ncols, 
-        # figsize=(4 * nrows, 3 * ncols), 
-        sharex=False, 
-        sharey=False,
-        layout="constrained"
-    )
+    # fig, axes = plt.subplots(
+    #     nrows=nrows, 
+    #     ncols=ncols, 
+    #     # figsize=(4 * nrows, 3 * ncols), 
+    #     sharex=False, 
+    #     sharey=False,
+    #     layout="constrained"
+    # )
     axes = axes.flatten() if num_cols > 1 else [axes]
     for ax, col in zip(axes, df.columns[1:]):
         # plot_boxplot(df, "bin_number", col, ax)
@@ -284,3 +284,36 @@ df.sort_values(
 print(df)
 # plot_heatmap(df.set_index("Methods"))
 plot_barplot(df)
+
+# import umap
+# features = df.drop(columns=["Methods"])
+
+# # Apply UMAP to reduce dimensions to 2D
+# reducer = umap.UMAP(n_neighbors=5, 
+#                     min_dist=0.3, 
+#                     n_components=2, 
+#                     random_state=42
+#                     )
+# embedding = reducer.fit_transform(features)
+
+# plt.figure(figsize=(10, 6))
+# plt.scatter(embedding[:, 0], 
+#             embedding[:, 1], 
+#             c=np.arange(len(df)), 
+#             cmap="tab10", 
+#             s=100, 
+#             # edgecolor="k"
+#             )
+
+# for i, method in enumerate(df["Methods"]):
+#     plt.text(embedding[i, 0], 
+#              embedding[i, 1] + 0.1, 
+#              method, 
+#              fontsize=10, 
+#              ha="center")
+
+# plt.title("UMAP Visualization of Methods")
+# # plt.xlabel("UMAP Dimension 1")
+# # plt.ylabel("UMAP Dimension 2")
+# # plt.grid(True)
+# plt.show()

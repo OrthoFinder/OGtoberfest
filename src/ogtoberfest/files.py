@@ -172,6 +172,7 @@ class FileHandler:
             self.missing_genes_path = self.global_score_path
             self.fusion_path = self.global_score_path
             self.fission_path = self.global_score_path
+            self.overlap_predog_path = self.global_score_path
 
         else:
             self.local_score_path = self.global_score_path / "local_scores"
@@ -181,6 +182,7 @@ class FileHandler:
             self.fission_path = self.global_score_path / "fission"
             self.vi_score_path = self.global_score_path / "local_vi_scores"
             self.dist_path = self.global_score_path / "local_score_distance"
+            self.overlap_predog_path = self.global_score_path / "overlap_predogs"
 
              
             if not os.path.exists(self.local_score_path):
@@ -203,6 +205,9 @@ class FileHandler:
             
             if not os.path.exists(self.dist_path):
                 os.makedirs(self.dist_path, exist_ok=True)
+
+            if not os.path.exists(self.overlap_predog_path):
+                os.makedirs(self.overlap_predog_path, exist_ok=True)
 
     def get_method_local_score_fn(self, method: str):
 
@@ -252,12 +257,13 @@ class FileWriter(FileHandler):
                 line = "\t".join((method, scores_str))
                 writer.write(line + "\n")
 
-    def save_local_info(self, 
-                        filename: str, 
-                        info_dict: Dict[str, Any],
-                        precision: int,
-                        info_type: str = "score",
-                        ):
+    def save_local_info(
+            self, 
+            filename: str, 
+            info_dict: Dict[str, Any],
+            precision: int,
+            info_type: str = "score",
+        ):
         
         colnames = ["RefOGs"]
         local_score_names, local_scores = [*zip(*info_dict.items())] 
@@ -367,10 +373,14 @@ class FileWriter(FileHandler):
                     for predog_key, tp in tp_dict.items():
                         line = "\t".join((refog_key, predog_key, ", ".join(tp)))
                         writer.write(line + "\n")
+                else:
+                    writer.write(refog_key + "\n")
 
-    def save_fission_genes(self, 
-                           filename: str, 
-                           fission_genes_dict: Dict[str, Set[str]]):
+    def save_fission_genes(
+            self, 
+            filename: str, 
+            fission_genes_dict: Dict[str, Set[str]]
+        ):
         
         colnames = ["RefOGs", "PredOGs", "Fission Genes"]
         colnames_str = "\t".join(colnames)
@@ -382,6 +392,8 @@ class FileWriter(FileHandler):
                     for predog_key, tp in tp_dict.items():
                         line = "\t".join((refog_key, predog_key, ", ".join(tp)))
                         writer.write(line + "\n")
+                else:
+                    writer.write(refog_key + "\n")
 
     def save_global_VI_scores(
             self, 
@@ -402,8 +414,8 @@ class FileWriter(FileHandler):
 
 
     def save_local_VI_scores(
-                self, 
-                local_VI_dict
+            self, 
+            local_VI_dict
         ):
         
         for m1, m1_vi_dict in local_VI_dict.items():
@@ -445,3 +457,19 @@ class FileWriter(FileHandler):
                 row = [str(vi) for vi in metric_row]
                 row_str = "\t".join(row)
                 writer.write(method + "\t" + row_str + "\n")
+
+
+    def save_overlap_predogs(
+            self, 
+            filename: str, 
+            predogs_dict: Dict[str, Set[str]]
+        ):
+
+        colnames = ["PredOGs", "Genes"]
+        colnames_str = "\t".join(colnames)
+        overlap_predog_filepath = self.overlap_predog_path / filename
+        with open(overlap_predog_filepath, "w") as writer:
+            writer.write(colnames_str + "\n")
+            for predog_key, predogs in predogs_dict.items():
+                line = "\t".join((predog_key, ", ".join(predogs)))
+                writer.write(line + "\n")

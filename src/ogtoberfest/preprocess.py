@@ -51,23 +51,44 @@ def orthomcl(input_file, output_file):
                 # ]
 
                 genes = []
-                for item in line.split(": ", 1)[1].split(", "):
+                for item in line.split(": ", 1)[1].split(" "):
                     if "combined" not in item:
                         gene = item.strip().replace("|", ".").replace("adjusted_", "")
-                        if "Branchiostoma_lanceolatum" in gene or "Schistosoma_mansoni" in gene:
-                            continue 
                         genes.append(gene)
 
                 if len(genes) > 1:
                     og = gname + ": " + ", ".join(genes)
                     writer.write(og + "\n")
-                else:
-                    single_gene_og.extend(genes)
-            if len(single_gene_og) > 1:
-                single_gene_og_set = set(single_gene_og)
-                og = "unassigned_genes" + ": " + ", ".join(single_gene_og_set)
-            writer.write(og + "\n")
+            #     else:
+            #         single_gene_og.extend(genes)
+            # if len(single_gene_og) > 1:
+            #     single_gene_og_set = set(single_gene_og)
+            #     og = "unassigned_genes" + ": " + ", ".join(single_gene_og_set)
+            # writer.write(og + "\n")
 
+
+
+# def orthomcl(input_file, output_file):
+#     with open(output_file, "w") as writer:
+#         with open(input_file, "r") as reader:
+             
+#             predog_base_name = "my_prefix%03d"
+#             n = 1000
+#             for line in reader:
+#                 line = line.strip()
+#                 gname = line.split(": ", 1)[0]
+#                 genes = []
+#                 for item in line.split(": ", 1)[1].split(" "):
+#                     if "combined" not in item:
+#                         gene = item.strip().replace("|", ".").replace("adjusted_", "")
+#                         if "Branchiostoma_lanceolatum" in gene or "Schistosoma_mansoni" in gene:
+#                             continue 
+#                         genes.append(item)
+#                 if len(genes) > 0:
+#                     predog_key = predog_base_name % n
+#                     og = predog_key + ": " + " ".join(genes)
+#                     writer.write(og + "\n")
+#                     n += 1
 
 def orthofinder(input_file, output_file):
     old_version = True
@@ -219,7 +240,7 @@ def broccoli_v2(input_file, output_file, protemes_dir: pathlib.Path):
                     if species is not None:
                         genes.append(species + "." + gene)
                     else:
-                        genes.appenbd(gene)
+                        genes.append(gene)
                 og = predog_key + ": " + ", ".join(genes)
                 writer.write(og + "\n")
 
@@ -328,3 +349,42 @@ def swiftortho(input_file, output_file):
                     
                 og = predog_key + ": " + ", ".join(genes)
                 writer.write(og + "\n")
+
+
+def orthohmm(input_file, output_file, protemes_dir: pathlib.Path):
+    species_gene_dict = {}
+
+    for file in protemes_dir.iterdir():
+        species = file.name.split(".", 1)[0]
+        with open(file, "r") as reader:
+            for line in reader:
+                if ">" in line:
+                    gene = line[1:].strip().split(".", 1)[-1]
+                    species_gene_dict[gene] = species
+
+    with open(output_file, "w") as writer:
+        with open(input_file, "r") as reader:
+            # unassigned_genes_list = []
+            for line in reader:
+                line = line.strip().split(": ")
+                predog_key = line[0]
+
+                genes = []
+                for gene in line[1].split():
+                    if len(gene) == 0:
+                        continue
+                    species = species_gene_dict.get(gene) 
+                    if species is not None:
+                        genes.append(species + "." + gene)
+                    else:
+                        genes.append(gene)
+                if len(genes) > 1:
+                    og = predog_key + ": " + ", ".join(genes)
+                    writer.write(og + "\n")
+            #     else:
+            #         unassigned_genes_list .extend(genes)
+            # og = "unassigned_genes" + ": " + ", ".join(unassigned_genes_list)
+            # writer.write(og + "\n")
+
+
+                

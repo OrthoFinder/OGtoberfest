@@ -137,7 +137,6 @@ def get_predog_num_species_dict(predog_species_dict):
     return num_species_predog_dict
 
 def get_species_dict(ogs_dict):
-
     species_dict = {
         og_key: set([og.split(".", 1)[0] for og in ogs]) for og_key, ogs in ogs_dict.items()
     }

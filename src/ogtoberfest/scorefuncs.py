@@ -602,7 +602,7 @@ def entropy_score(U, V_prime, n):
             max_entropy = np.log2(nrefog)
             entropy_dict[refog_key] = np.sum(-probability * np.log2(probability)) / max_entropy
         else:
-            entropy_dict[refog_key] = np.nan
+            entropy_dict[refog_key] = 1 # np.nan
 
     total_entropy = np.nansum([entropy_dict[refog_key] * len(refog) / n for refog_key, refog in U.items()])
 
@@ -669,12 +669,15 @@ def macro_and_weighted_avg_scores(U, V_prime, n, num_round):
             weighted_distance_dict[refog_key] = np.sqrt(np.mean(predog_distances_arr**2))
 
             effective_size_precision_weighted_arr = overlap_arr * predog_weighted_precision_arr
-            effective_size_precision_weighted_dict[refog_key] = np.sum(effective_size_precision_weighted_arr)
+            effective_size_precision_weighted_dict[refog_key] = \
+                int(np.sum(effective_size_precision_weighted_arr))
 
             effective_size_JI_weighted_arr = npredog_arr * predog_JI_arr
-            effective_size_JI_weighted_dict[refog_key] = np.sum(effective_size_JI_weighted_arr)
+            effective_size_JI_weighted_dict[refog_key] = \
+                int(np.sum(effective_size_JI_weighted_arr))
 
-            effective_size_JI_refog_weighted_dict[refog_key] = nrefog * weighted_JI_dict[refog_key]
+            effective_size_JI_refog_weighted_dict[refog_key] = \
+                int(nrefog * weighted_JI_dict[refog_key])
 
             all_scores = [
                 (
@@ -714,9 +717,9 @@ def macro_and_weighted_avg_scores(U, V_prime, n, num_round):
             weighted_JI_dict[refog_key] = 0.0
             weighted_dissimilarity_dict[refog_key] = 0.0
             weighted_distance_dict[refog_key] = 0.0
-            effective_size_precision_weighted_dict[refog_key] = 0.0
-            effective_size_JI_weighted_dict[refog_key] = 0.0
-            effective_size_JI_refog_weighted_dict[refog_key] = 0.0
+            effective_size_precision_weighted_dict[refog_key] = 0
+            effective_size_JI_weighted_dict[refog_key] = 0
+            effective_size_JI_refog_weighted_dict[refog_key] = 0
             all_score_dict[refog_key] = []
             all_TP_dict[refog_key] = {}
 
@@ -961,15 +964,15 @@ def fusion(ref_ogs, V_prime, V):
     #                     fusion_predog_dict[predog_key].add(refog_key)
 
     
-    for refog_key, predog_dict in V_prime.items():
-        if len(predog_dict) == 1:
-            predog_key = [*predog_dict.keys()][0]
-            if len(predog_dict[predog_key] - ref_ogs[refog_key]) > 0 \
-                and len(ref_ogs[refog_key] - predog_dict[predog_key]) == 0:
-                fusion_refog_set.add(refog_key)
+    # for refog_key, predog_dict in V_prime.items():
+    #     if len(predog_dict) == 1:
+    #         predog_key = [*predog_dict.keys()][0]
+    #         if len(predog_dict[predog_key] - ref_ogs[refog_key]) > 0 \
+    #             and len(ref_ogs[refog_key] - predog_dict[predog_key]) == 0:
+    #             fusion_refog_set.add(refog_key)
             
-                if predog_key not in fusion_predog_dict:
-                    fusion_predog_dict[predog_key] = set([refog_key])
+    #             if predog_key not in fusion_predog_dict:
+    #                 fusion_predog_dict[predog_key] = set([refog_key])
         
 
     fusion_refog_bool_dict = {
@@ -1111,12 +1114,14 @@ def check_missing_species(refog_species_dict, predog_species_dict, num_round):
     
     for refog_key, refog_species in refog_species_dict.items():
         refog_species_num = len(refog_species)
+        refog_species_copy = refog_species.copy()
         for predog_key, predog_species in predog_species_dict[refog_key].items():
-            refog_species.difference_update(predog_species)
-        missing_species_dict[refog_key] = refog_species
-        missing_species_count_dict[refog_key] = len(refog_species)
+            refog_species_copy.difference_update(predog_species)
+
+        missing_species_dict[refog_key] = refog_species_copy
+        missing_species_count_dict[refog_key] = len(refog_species_copy)
         missing_species_percent_dict[refog_key] = \
-            np.round(len(refog_species) / refog_species_num, num_round)
+            np.round(len(refog_species_copy) / refog_species_num, num_round)
     
     return  missing_species_dict, missing_species_count_dict, missing_species_percent_dict
 

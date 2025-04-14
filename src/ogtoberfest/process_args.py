@@ -188,7 +188,9 @@ def read_default_args(manager, args_list, usr_input_args: List[str]):
         if len(exist_flag):
             continue
         arg_name = arg_dict["name"]
-        arg_value = arg_dict["default"]
+        arg_value = None if len(arg_dict["default"]) == 0  else arg_dict["default"]
+        if arg_name == "precision" and arg_value is not None:
+            arg_value = int(arg_value)
 
         if "input_path" == arg_name or "output_path" == arg_name:
             continue

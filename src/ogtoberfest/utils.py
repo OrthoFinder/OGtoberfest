@@ -120,6 +120,7 @@ def get_func_name_map():
         "fo": "fastoma",
         "so": "swiftortho",
         "swiftortho": "swiftortho",
+        "orthohmm": "orthohmm",
     }
     return func_name
 

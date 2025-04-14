@@ -1,4 +1,4 @@
-RefOGs	num_species	num_genes	num_genes_per_species	avg_tree_length	min_length	max_length	mean_length	median_length	invariable_sites_proportion	gamma_shape	total_tree_length
+RefOGs	num_species	num_genes	num_genes_per_species	avg_tree_length	min_length	max_length	mean_length	median_length	invariable_sites_proportion	gamma_shape_alpha	total_tree_length
 RefOG024	12	51	4.25	0.2003	201	1013	474	466	0.0115	1.4563	20.0329
 RefOG006	12	48	4.0	0.0808	120	2311	1869	1979	0.0715	1.0754	7.5976
 RefOG036	12	46	3.8333	0.0808	87	456	399	411	0.0633	0.8733	7.2695
