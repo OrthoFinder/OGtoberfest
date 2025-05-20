@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 
-from ogtoberfest import preprocess, process_args, utils, files
+from ogtoberfest import orthogroups_preprocess, orthologues_preprocess, process_args, utils, files
 from ogtoberfest import orthogroups_analyser as opa
 from ogtoberfest import scorefuncs as sf
 from ogtoberfest import score_analyser as sa
@@ -34,19 +34,26 @@ def preprocess_file(
         file: pathlib.Path,
         funcs_dict: Dict[str, Callable], 
         method_func_name: Optional[str] = None,
+        method: str = None,
     ):
     if method_func_name is not None:
         method_func = funcs_dict[method_func_name]
+        if method is None:
+            output_path = manager.options.output_path / file.name
+        else:
+            output_path = manager.options.output_path / method 
+            output_path.mkdir(parents=True, exist_ok=True)
+            output_path = output_path / file.name
         if method_func_name in ["hieranoid", "fastoma", "broccoli", "orthohmm"]:
             method_func(
                 file,
-                manager.options.output_path / file.name,
+                output_path,
                 manager.options.database_path,
             )
         else:
             method_func(
                 file,
-                manager.options.output_path / file.name,
+                output_path,
             )
 
 def compute_scores(
@@ -172,12 +179,15 @@ def main(args: Optional[List[str]] = None):
 
     manager = process_args.create_options(args, task=task)
     method_name_maps = utils.get_func_name_map()
-    if task == "preprocess":
-        funcs_dict = utils.get_func_name(preprocess)
+    if "preprocess" in task:
+        if task == "orthogroups_preprocess":
+            funcs_dict = utils.get_func_name(orthogroups_preprocess)
+        elif task == "orthologues_preprocess":
+            funcs_dict = utils.get_func_name(orthologues_preprocess)
+    
         if manager.options.input_path.is_dir():
-            for file in manager.options.input_path.iterdir():
-                print(f"Preprocessing {file}")
-                method = re.split("_|\.", file.name)[0]
+            for files in manager.options.input_path.iterdir():
+                method = re.split("_|\.", files.name)[0]
                 method = method.lower()
                 method_func_name = method_name_maps.get(method)
 
@@ -185,12 +195,28 @@ def main(args: Optional[List[str]] = None):
                     and manager.options.database_path is None:
                     print(f"{method_func_name.titile()} needs to provide a database!")
                     continue
-                preprocess_file(
-                    manager,
-                    file,
-                    funcs_dict, 
-                    method_func_name,
-                )    
+
+                if files.is_file():
+                    print(f"Preprocessing {files}")
+
+                    preprocess_file(
+                        manager,
+                        files,
+                        funcs_dict, 
+                        method_func_name,
+                    ) 
+                else:
+                    for file in files.iterdir():
+                        print(f"Preprocessing {file}")
+
+                        preprocess_file(
+                            manager,
+                            file,
+                            funcs_dict, 
+                            method_func_name,
+                            method,
+                        ) 
+
 
         elif manager.options.input_path.is_file():
             method = re.split("_|\.", manager.options.input_path.name)[0]

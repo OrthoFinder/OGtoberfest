@@ -283,11 +283,13 @@ for eval_col in refog_colnames:
         # refogs_df["bin_number"] = refogs_df["bin_col"].cat.codes + 1 
 
         for file in pathlib.Path(local_property_dir).iterdir():
-            methods.append(file.name.split(".", 1)[0])
-            # df = pd.read_csv(file, sep="\t", usecols=lambda x: x != "Missing_Genes")
-            score_df = pd.read_csv(file, sep='\t', usecols=["RefOGs", predog_col])
-            score_df.rename(columns={predog_col: file.name.rsplit(".", 1)[0]}, inplace=True)
-            score_dfs.append(score_df)
+            method = file.name.split(".", 1)[0]
+            if method.startswith("OF"):
+                methods.append(method)
+                # df = pd.read_csv(file, sep="\t", usecols=lambda x: x != "Missing_Genes")
+                score_df = pd.read_csv(file, sep='\t', usecols=["RefOGs", predog_col])
+                score_df.rename(columns={predog_col: file.name.rsplit(".", 1)[0]}, inplace=True)
+                score_dfs.append(score_df)
 
         combined_df = functools.reduce(lambda left, right: pd.merge(left, right, on='RefOGs'), 
                                     score_dfs)
@@ -314,7 +316,7 @@ for eval_col in refog_colnames:
         i = 0
         for j in range(m):
             print(methods[j])
-            dist_dict[methods[j]] = dist_arr[m * i + j - ((i + 2) * (i + 1)) // 2].round(2)
+            dist_dict[methods[j]] = dist_arr[m * i + j - ((i + 2) * (i + 1)) // 2].round(5)
         # melted_df = combined_df.melt(id_vars="num_genes", var_name="Methods", value_name="Values")
 
         # # Create the violin plot
@@ -334,7 +336,7 @@ sorted_columns = sorted([*combined_df.columns], key=lambda col: dist_dict[col])
 
 combined_df = combined_df[sorted_columns]
 melted_df = combined_df.melt(var_name="Methods", value_name="Values")
-print(melted_df)
+
 # Create the violin plot for all distributions
 plt.figure(figsize=(16, 8))
 sns.violinplot(

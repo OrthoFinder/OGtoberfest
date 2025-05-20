@@ -174,3 +174,4 @@ OrthoBench/orthobench_proteomes/
 .pre-commit-config.yaml
 Sim*/
 myanalysis/
+Orthologues/

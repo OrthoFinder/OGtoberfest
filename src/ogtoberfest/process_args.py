@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Literal, Optional, Tuple, TypedDict, TypeVar
 from dataclasses import dataclass
 from ogtoberfest import utils
 
-CMD_MANAGER: Literal["preprocess", "benchmark"] = "preprocess"
+CMD_MANAGER: Literal["orthogroups_preprocess", "orthologues_preprocess", "benchmark"] = "orthogroups_preprocess"
 ArgValue = Any
 
 THIS_DIR = pathlib.Path(__file__).parent
@@ -141,7 +141,7 @@ def create_options(args: List[str], task=Optional[CMD_MANAGER]):
                         utils.fail()
             setattr(manager.options, attr_name, arg_value)
 
-    if task == "preprocess":
+    if task in ["orthogroups_preprocess", "orthologues_preprocess"]:
         prefix = "preprocessed"
     else:
         prefix = "scores"

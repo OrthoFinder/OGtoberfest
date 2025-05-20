@@ -465,11 +465,11 @@ class FileWriter(FileHandler):
             predogs_dict: Dict[str, Set[str]]
         ):
 
-        colnames = ["PredOGs", "Genes"]
-        colnames_str = "\t".join(colnames)
+        # colnames = ["PredOGs", "Genes"]
+        # colnames_str = "\t".join(colnames)
         overlap_predog_filepath = self.overlap_predog_path / filename
         with open(overlap_predog_filepath, "w") as writer:
-            writer.write(colnames_str + "\n")
+            # writer.write(colnames_str + "\n")
             for predog_key, predogs in predogs_dict.items():
-                line = "\t".join((predog_key, ", ".join(predogs)))
+                line = predog_key + ": " + ", ".join(predogs)
                 writer.write(line + "\n")
