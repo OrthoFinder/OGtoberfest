@@ -1,5 +1,3 @@
-import pathlib
-
 orig_refog_path = r"./Sim1k/reference_orthogroups_orig.txt"
 orig_refog_stats_path = r"./Sim1k/reference_orthogroups_stats_orig.txt"
 

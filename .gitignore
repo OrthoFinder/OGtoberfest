@@ -171,7 +171,9 @@ OrthoBench/figs/
 OrthoBench/iqtree2_logs/
 OrthoBench/old_predicted_orthogroups/
 OrthoBench/orthobench_proteomes/
+OrthoBench/WorkingDirectory/
 .pre-commit-config.yaml
 Sim*/
 myanalysis/
 Orthologues/
+src/ogtoberfest/orthogroups/ogpreprocess.py

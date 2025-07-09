@@ -35,7 +35,7 @@ from typing import Optional, List, Tuple, Dict, Set, Iterator
 from itertools import product
 import matplotlib.pyplot as plt
 import seaborn as sns
-import ogtoberfest.scorefuncs as sf 
+import ogtoberfest.orthogroups.scorefuncs as sf 
 
 
 COMPILE = re.compile(r"[_\s]+")

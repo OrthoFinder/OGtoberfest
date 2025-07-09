@@ -5,9 +5,9 @@ import seaborn as sns
 import matplotlib.colors as mcolors
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
+
 from met_brewer import met_brew
-colors = met_brew(name="VanGogh2", n=20)#, brew_type="continuous") Signac
+colors = met_brew(name="VanGogh2", n=16)#, brew_type="continuous") Signac
 sns.set_theme(style="white", context="talk")
 colors = colors[::-1]
 # colors = set([
@@ -252,12 +252,14 @@ def plot_barplot(df):
 input_path = r"./OrthoBench/scores_preprocessed_predicted_orthogroups/OrthoBench_global_scores.tsv"
 # input_path = r"./Sim1k/scores_preprocessed_predicted_orthogroups/Sim1k_global_scores.tsv"
 
+
 df = pd.read_csv(input_path, sep="\t")
 df.sort_values(
     by=[
         "Rank Score",
         "Recall",
         "Precision",
+        # "F1-score"
         "RefOG Fissions (%)",
         "RefOG Fusions (%)",
         "Entropy",
@@ -317,3 +319,89 @@ plot_barplot(df)
 # # plt.ylabel("UMAP Dimension 2")
 # # plt.grid(True)
 # plt.show()
+
+
+
+# from sklearn.linear_model import LinearRegression
+
+# def plot_heatmap_param_cov(X, y, feature_names):
+#     n_bootstraps = 1000
+#     coeffs = []
+
+#     for _ in range(n_bootstraps):
+#         indices = np.random.choice(len(y), size=len(y), replace=True)
+#         X_resample = X[indices]
+#         y_resample = y[indices]
+
+#         model = LinearRegression().fit(X_resample, y_resample)
+#         coeffs.append(model.coef_)
+
+#     coeffs = np.array(coeffs)
+#     cov_matrix = np.cov(coeffs, rowvar=False)
+
+#     sns.set_theme(style="white")
+#     mask = np.triu(np.ones_like(cov_matrix, dtype=bool))
+#     f, ax = plt.subplots(figsize=(8, 6))
+#     cmap = sns.diverging_palette(230, 20, as_cmap=True)
+
+#     sns.heatmap(cov_matrix, mask=mask, cmap=cmap, vmax=.3, center=0,
+#                 square=True, linewidths=.5, cbar_kws={"shrink": .3},
+#                 annot=True, fmt=".2f", ax=ax,
+#                 xticklabels=feature_names, yticklabels=feature_names)
+
+#     ax.set_title("Covariance of Bootstrapped Coefficients")
+#     plt.xticks(rotation=45, ha='right')  # Rotate labels for readability
+#     plt.tight_layout()
+#     plt.show()
+
+
+# def plot_heatmap_param_corr(X, y, feature_names):
+#     n_bootstraps = 1000
+#     coeffs = []
+
+#     for _ in range(n_bootstraps):
+#         indices = np.random.choice(len(y), size=len(y), replace=True)
+#         X_resample = X[indices]
+#         y_resample = y[indices]
+
+#         model = LinearRegression().fit(X_resample, y_resample)
+#         coeffs.append(model.coef_)
+
+#     coeffs = np.array(coeffs)
+#     corr_matrix = np.corrcoef(coeffs, rowvar=False)
+
+#     sns.set_theme(style="white")
+#     mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
+#     f, ax = plt.subplots(figsize=(8, 6))
+#     cmap = sns.diverging_palette(230, 20, as_cmap=True)
+
+#     sns.heatmap(corr_matrix, mask=mask, cmap=cmap, vmin=-1, vmax=1, center=0,
+#                 square=True, linewidths=.5, cbar_kws={"shrink": .3},
+#                 annot=True, fmt=".2f", ax=ax,
+#                 xticklabels=feature_names, yticklabels=feature_names)
+
+#     ax.set_title("Correlation of Bootstrapped Coefficients")
+#     plt.xticks(rotation=45, ha='right')
+#     plt.tight_layout()
+#     plt.show()
+
+
+
+# feature_names = [
+#         "Recall",
+#         "Precision",
+#         # "F1-score"
+#         "RefOG Fissions (%)",
+#         "RefOG Fusions (%)",
+#         "Entropy",
+#         "Missing Genes (%)",
+#         "Missing RefOGs (%)",
+#         # "Runtime",
+#         # "Effective Size",
+#     ]
+# X_raw = df[feature_names].to_numpy()
+# y = df["Rank Score"].squeeze()
+# plot_heatmap_param_corr(X_raw, y, feature_names)
+
+# ## When the coefficient for Recall increases in a bootstrap iteration, 
+# # the coefficient for Entropy also tends to increase.

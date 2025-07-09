@@ -2,12 +2,14 @@ import sys
 from typing import Dict, List, Optional, Callable, Set
 import re
 import pathlib
+import asyncio
+import inspect
+
 import numpy as np
 import pandas as pd
 
-
 from ogtoberfest.orthogroups import orthogroups_preprocess, orthogroups_files
-from ogtoberfest.utils import util
+from ogtoberfest.utils import util, files
 from ogtoberfest.run import process_args
 from ogtoberfest.orthologues import orthologues_preprocess
 from ogtoberfest.orthogroups import orthogroups_analyser as opa
@@ -33,6 +35,7 @@ runtime_dict = {
 
 
 def preprocess_file(
+        speciesInfoObj: util.SpeciesInfo,
         manager: process_args.Manager,
         file: pathlib.Path,
         funcs_dict: Dict[str, Callable], 
@@ -58,6 +61,59 @@ def preprocess_file(
                 file,
                 output_path,
             )
+
+
+# async def preprocess_file(
+#     speciesInfoObj,
+#     manager,
+#     file: pathlib.Path,
+#     output_path: pathlib.Path,
+#     method_func: Callable, 
+#     method_func_name: Optional[str] = None,
+# ):
+
+#     if inspect.iscoroutinefunction(method_func):
+#         if method_func_name in ["hieranoid", "fastoma", "broccoli", "orthohmm"]:
+#             await method_func(file, output_path, manager.options.database_path)
+#         else:
+#             await method_func(file, output_path)
+#     else:
+#         if method_func_name in ["hieranoid", "fastoma", "broccoli", "orthohmm"]:
+#             method_func(file, output_path, manager.options.database_path)
+#         else:
+#             method_func(file, output_path)
+
+# async def preprocess_tasks(
+#         method_file_list,
+#         speciesInfoObj,
+#         manager,
+#         funcs_dict,
+#         main_task,
+# ):
+#     tasks = []
+#     for method, method_func_name, file in method_file_list:
+#         if method_func_name is None or method is None:
+#             continue
+#         print(f"Processing {file}")
+#         if "orthologues" in main_task:
+#             output_path = manager.options.output_path / method
+#             output_path.mkdir(parents=True, exist_ok=True)
+#             output_path = output_path / f"{method}_all_genes_pairs_combined.txt"
+#         else:
+#             output_path = manager.options.output_path / file.name
+        
+#         method_func = funcs_dict.get(method_func_name)
+#         task = preprocess_file(
+#             speciesInfoObj,
+#             manager,
+#             file,
+#             output_path,
+#             method_func,
+#             method_func_name,
+#         )
+#         tasks.append(task)
+
+#     await asyncio.gather(*tasks)
 
 def compute_scores(
         file,
@@ -178,72 +234,18 @@ def main(args: Optional[List[str]] = None):
 
     args = util.check_cmd_args(args)
 
-    task = args.pop(0)
+    main_task = args.pop(0)
 
-    manager = process_args.create_options(args, task=task)
+    manager = process_args.create_options(args, task=main_task)
     method_name_maps = util.get_func_name_map()
-
-    if "preprocess" in task:
-        if task == "orthogroups_preprocess":
-            funcs_dict = util.get_func_name(orthogroups_preprocess)
-        elif task == "orthologues_preprocess":
-            funcs_dict = util.get_func_name(orthologues_preprocess)
     
-        if manager.options.input_path.is_dir():
-            for dir_file in manager.options.input_path.iterdir():
-                method = re.split("_|\.", dir_file.name)[0]
-                method = method.lower()
-                method_func_name = method_name_maps.get(method)
-
-                if method_func_name in ["hieranoid", "fastoma", "broccoli", "orthohmm"] \
-                    and manager.options.database_path is None:
-                    print(f"{method_func_name.titile()} needs to provide a database!")
-                    continue
-
-                if task == "orthogroups_preprocess":
-                    method = None
-
-                if dir_file.is_file():
-                    print(f"Preprocessing {dir_file}")
-
-                    preprocess_file(
-                        manager,
-                        dir_file,
-                        funcs_dict, 
-                        method_func_name,
-                        method
-                    ) 
-                else:
-                    for file in dir_file.iterdir():
-                        print(f"Preprocessing {file}")
-                        
-                        preprocess_file(
-                            manager,
-                            file,
-                            funcs_dict, 
-                            method_func_name,
-                            method,
-                        ) 
-
-
-        elif manager.options.input_path.is_file():
-            method = re.split("_|\.", manager.options.input_path.name)[0]
-            method = method.lower()
-            method_func_name = method_name_maps.get(method)
-            if method_func_name in ["hieranoid", "fastoma", "broccoli"]:
-                if manager.options.database_path is None:
-                    print(f"{method_func_name.titile()} needs to provide a database!")
-                    sys.exit(1)
-
-            preprocess_file(
-                manager,
-                manager.options.input_path,
-                funcs_dict,
-                method_func_name,
-            )
-        print(f"All the files have been preprocessed!")
-        sys.exit(0)
+    filehandler = files.FileHandler(
+        manager.options.database_path,
+        manager.options.wd_base,
+    )
     
+    speciesInfoObj = filehandler.process_fasta_files()
+
     method_file_list = []
     if manager.options.input_path.is_dir():
         for dir_file in manager.options.input_path.iterdir():
@@ -264,8 +266,85 @@ def main(args: Optional[List[str]] = None):
         method_func_name = method_name_maps.get(method)
         method_file_list.append((method, method_func_name, manager.options.input_path))
 
+   
+    ## ----------------------------- Preprocessing ---------------------------
+    if "preprocess" in  main_task:
+        if main_task == "orthogroups_preprocess":
+            funcs_dict = util.get_func_name(orthogroups_preprocess)
+        elif main_task == "orthologues_preprocess":
+            funcs_dict = util.get_func_name(orthologues_preprocess)
 
-    if task == "orthogroups_benchmark":
+        # asyncio.run(
+        #     preprocess_tasks(
+        #         method_file_list,
+        #         speciesInfoObj,
+        #         manager,
+        #         funcs_dict,
+        #         main_task,
+        #     )
+        # )
+    
+        if manager.options.input_path.is_dir():
+            for dir_file in manager.options.input_path.iterdir():
+                method = re.split("_|\.", dir_file.name)[0]
+                method = method.lower()
+                method_func_name = method_name_maps.get(method)
+
+                if method_func_name in ["hieranoid", "fastoma", "broccoli", "orthohmm"] \
+                    and manager.options.database_path is None:
+                    print(f"{method_func_name.titile()} needs to provide a database!")
+                    continue
+
+                if main_task == "orthogroups_preprocess":
+                    method = None
+
+                if dir_file.is_file():
+                    print(f"Preprocessing {dir_file}")
+
+                    preprocess_file(
+                        speciesInfoObj,
+                        manager,
+                        dir_file,
+                        funcs_dict, 
+                        method_func_name,
+                        method
+                    ) 
+                else:
+                    for file in dir_file.iterdir():
+                        print(f"Preprocessing {file}")
+                        
+                        preprocess_file(
+                            speciesInfoObj,
+                            manager,
+                            file,
+                            funcs_dict, 
+                            method_func_name,
+                            method,
+                        ) 
+
+
+        elif manager.options.input_path.is_file():
+            method = re.split("_|\.", manager.options.input_path.name)[0]
+            method = method.lower()
+            method_func_name = method_name_maps.get(method)
+            if method_func_name in ["hieranoid", "fastoma", "broccoli"]:
+                if manager.options.database_path is None:
+                    print(f"{method_func_name.titile()} needs to provide a database!")
+                    sys.exit(1)
+
+            preprocess_file(
+                speciesInfoObj,
+                manager,
+                manager.options.input_path,
+                funcs_dict,
+                method_func_name,
+            )
+        print(f"All the files have been preprocessed!")
+        sys.exit(0)
+    
+    ## ---------------------- Benchmarking --------------------------
+
+    if main_task == "orthogroups_benchmark":
         # filehandler = files.FileHandler(manager.options.output_path)
         filewriter = orthogroups_files.FileWriter(manager.options.output_path)
         # filewriter = files.FileWriter(
@@ -436,7 +515,7 @@ def main(args: Optional[List[str]] = None):
                 global_score_colnames, global_score_filename, global_scores_dict
             )
 
-    elif task == "orthologues_benchmark":
+    elif main_task == "orthologues_benchmark":
         pass
 
     print()

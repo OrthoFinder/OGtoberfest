@@ -36,7 +36,7 @@
                 "--database"
             ],
             "name": "database_path",
-            "default": "./OrthoBench/proteomes_gene_labels",
+            "default": "./OrthoBench/proteomes",
             "action": "",
             "description": "A directory containing the fasta files",
             "help": "",
@@ -71,6 +71,21 @@
             "default": "./Orthologues",
             "action": "",
             "description": "A file or directory containing the format regulated predicted orthogroup file(s)",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-D",
+                "--database"
+            ],
+            "name": "database_path",
+            "default": "./Orthologues/database",
+            "action": "",
+            "description": "A directory containing the fasta files",
             "help": "",
             "limit": "",
             "valid_options": "",
@@ -115,7 +130,7 @@
                 "--database"
             ],
             "name": "database_path",
-            "default": "./OrthoBench/proteomes_gene_labels",
+            "default": "./OrthoBench/proteomes",
             "action": "",
             "description": "A directory containing the fasta files",
             "help": "",
@@ -236,6 +251,7 @@
                 "Missing Species (%)",
                 "Fusion (PredOGs)",
                 "Fission (PredOGs)",
+                "F1-score",
                 "Weighted Avg Fowlkes-Mallows Index",
                 "Weighted Avg Jaccard Index",
                 "Weighted Avg Disimilarity",
@@ -460,6 +476,21 @@
             "default": "./Orthologues",
             "action": "",
             "description": "Directory containing score files",
+            "help": "",
+            "limit": "",
+            "valid_options": "",
+            "error_message": "",
+            "category": "public"
+        },
+        {
+            "flag": [
+                "-D",
+                "--database"
+            ],
+            "name": "database_path",
+            "default": "./Orthologues/database",
+            "action": "",
+            "description": "A directory containing the fasta files",
             "help": "",
             "limit": "",
             "valid_options": "",

@@ -253,8 +253,8 @@ def handle_missing_path_args(
     if output_path_isdir and not os.path.exists(manager.options.output_path):
         os.makedirs(manager.options.output_path, exist_ok=True)
     
-    if task == "orthologues_benchmark":
-        os.makedirs(manager.options.input_path.parent / "working_directory", exist_ok=True)
+    setattr(manager.options, "wd_base", manager.options.input_path.parent / "WorkingDirectory")
+    os.makedirs(manager.options.wd_base, exist_ok=True)
 
     # if not hasattr(manager.options, "database_path"):
     #     if not input_path_exist \

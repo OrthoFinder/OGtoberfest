@@ -7,6 +7,8 @@ from ogtoberfest import utils
 
 def grouped_orthologues(orthologues_dir: pathlib.Path):
 
+
+    
     for file in orthologues_dir.iterdir():
         with open(file) as reader:
             pass
