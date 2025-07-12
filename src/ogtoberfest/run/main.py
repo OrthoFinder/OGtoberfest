@@ -197,7 +197,7 @@ def main(args: Optional[List[str]] = None):
     )
     
     speciesInfoObj = filehandler.process_fasta_files()
-
+    input_path_isfile = False
     method_file_list = []
     if manager.options.input_path.is_dir():
         for dir_file in manager.options.input_path.iterdir():
@@ -213,14 +213,14 @@ def main(args: Optional[List[str]] = None):
                     method_file_list.append((method, method_func_name, file))
 
     else:
+        input_path_isfile = True
         method = re.split("_|\.", manager.options.input_path.name)[0]
         method = method.lower()
         method_func_name = method_name_maps.get(method)
         method_file_list.append((method, method_func_name, manager.options.input_path))
     
-    database = "OrthoBench" \
-        if "orthobench" == manager.options.input_path.parent.name.lower() \
-            or not manager.options.use_id else None
+    database = "OrthoBench" if "orthobench" == manager.options.input_path.parent.name.lower() else None
+    use_id = False if database == "OrthoBench" else manager.options.use_id
     ## ----------------------------- Preprocessing ---------------------------
     if "preprocess" in  main_task:
         if main_task == "orthogroups_preprocess":
@@ -293,7 +293,12 @@ def main(args: Optional[List[str]] = None):
 
     if main_task == "orthogroups_benchmark":
         # filehandler = files.FileHandler(manager.options.output_path)
-        filewriter = orthogroups_files.FileWriter(manager.options.output_path)
+        filewriter = orthogroups_files.FileWriter(
+            manager.options.output_path,
+            input_path_isfile,
+            speciesInfoObj.id2sequence_dict,
+            use_id
+        )
         # filewriter = files.FileWriter(
         #     filehandler.global_score_path,
         #     filehandler.local_score_path, 
@@ -383,7 +388,7 @@ def main(args: Optional[List[str]] = None):
                 manager.options.uncertian_refog_path,
                 speciesInfoObj.sequence2id_dict
             )
-            refogs_dict = ogreader.read_ogs(manager.options.refog_path)
+            refogs_dict = ogreader.read_ogs(manager.options.refog_path, use_id=use_id)
             refogs_nspecies_dict, refogs_ngenes_dict = \
                 ogreader.read_ogs_stats(manager.options.refog_stats_path)
 
@@ -398,7 +403,7 @@ def main(args: Optional[List[str]] = None):
                 method = re.split("_|\.", file.name)[0]
                 method = method.lower()
                 method_func_name = method_name_maps.get(method)
-                predogs_dict[method_func_name] = ogreader.read_ogs(file, database=database)
+                predogs_dict[method_func_name] = ogreader.read_ogs(file, use_id=False)
                 global_scores_dict, local_scores_dict, other_info, complete_predog_dict = \
                     compute_scores(
                         file,

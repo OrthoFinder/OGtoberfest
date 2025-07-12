@@ -18,14 +18,14 @@ class OGReader:
         self.species2id_dict = species2id_dict
 
 
-    def read_ogs(self, og_path, database: str = None)-> Dict[str, Set[str]]:
+    def read_ogs(self, og_path, use_id: bool = True)-> Dict[str, Set[str]]:
         refogs = {}
         try:
             with open(og_path, "r") as reader:
                 for line in reader:
                     line = line.strip().split(": ")
                     refog_key, genes = line[0], line[-1]
-                    if database == "OrthoBench":
+                    if not use_id:
                         genes = [
                             g.strip() for g in genes.split(", ") if g.strip() != ""
                         ]
@@ -43,7 +43,7 @@ class OGReader:
     
     def read_orthobench_refogs(self) -> Dict[str, Set[str]]:
         n_expected = 1945
-        refogs = self.read_ogs(self.refog_path, database="OrthoBench")
+        refogs = self.read_ogs(self.refog_path, use_id=False)
         n_genes = np.sum([len(refog) for refog in refogs.values()])
 
         if "uncertain" in self.refog_path.name:
@@ -252,7 +252,15 @@ class FileWriter(FileHandler):
     #     self.vi_score_path = vi_score_path
     #     self.dist_path = dist_path
 
-    def __init__(self, output_path: pathlib.Path, input_path_isfile: bool = False):
+    def __init__(
+            self, 
+            output_path: pathlib.Path, 
+            input_path_isfile: bool = False,
+            id2sequence_dict: Optional[Dict[str, str]] = None,
+            use_id: bool = True
+        ):
+        self.id2sequence_dict = id2sequence_dict
+        self.use_id = use_id
         super().__init__(output_path, input_path_isfile)
 
     def save_global_scores(self, 
@@ -355,10 +363,12 @@ class FileWriter(FileHandler):
     #             writer.write(scores_str + "\n")
 
 
-    def save_missing_genes(self, 
-                           filename: str, 
-                           missing_species_dict: Dict[str, Set[str]],
-                           missing_genes_dict: Dict[str, Set[str]]):
+    def save_missing_genes(
+            self, 
+            filename: str, 
+            missing_species_dict: Dict[str, Set[str]],
+            missing_genes_dict: Dict[str, Set[str]]
+    ):
         
         colnames = ["RefOGs", "Missing Species", "Missing Genes"]
         colnames_str = "\t".join(colnames)
@@ -367,6 +377,11 @@ class FileWriter(FileHandler):
             writer.write(colnames_str + "\n")
             for refog_key, missing_genes in missing_genes_dict.items():
                 missing_species = missing_species_dict[refog_key]
+                if self.use_id:
+                    missing_species = [
+                        self.id2sequence_dict.get(ms)
+                        for ms in missing_species
+                    ]
                 missing_species_str = ", ".join(missing_species)
                 missing_genes_str = ", ".join(missing_genes)
                 writer.write("\t".join((refog_key, missing_species_str, missing_genes_str)) + "\n")
@@ -383,6 +398,11 @@ class FileWriter(FileHandler):
             for refog_key, tp_dict in fusion_genes_dict.items():
                 if len(tp_dict) != 0:
                     for predog_key, tp in tp_dict.items():
+                        if self.use_id:
+                            tp = [
+                                self.id2sequence_dict.get(g)
+                                for g in tp
+                            ]
                         line = "\t".join((refog_key, predog_key, ", ".join(tp)))
                         writer.write(line + "\n")
                 else:
@@ -402,6 +422,11 @@ class FileWriter(FileHandler):
             for refog_key, tp_dict in fission_genes_dict.items():
                 if len(tp_dict) != 0:
                     for predog_key, tp in tp_dict.items():
+                        if self.use_id:
+                            tp = [
+                                self.id2sequence_dict.get(g)
+                                for g in tp
+                            ]
                         line = "\t".join((refog_key, predog_key, ", ".join(tp)))
                         writer.write(line + "\n")
                 else:
@@ -483,5 +508,10 @@ class FileWriter(FileHandler):
         with open(overlap_predog_filepath, "w") as writer:
             # writer.write(colnames_str + "\n")
             for predog_key, predogs in predogs_dict.items():
+                if self.use_id:
+                    predogs = [
+                        self.id2sequence_dict.get(g)
+                        for g in predogs 
+                    ]
                 line = predog_key + ": " + ", ".join(predogs)
                 writer.write(line + "\n")
