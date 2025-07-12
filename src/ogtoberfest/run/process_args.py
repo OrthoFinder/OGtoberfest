@@ -15,9 +15,8 @@ CMD_MANAGER: Literal[
 ArgValue = Any
 
 THIS_DIR = pathlib.Path(__file__).parent
-ARGS_JSON_PATH = THIS_DIR / "./input_args.json"
-
-CWD = pathlib.Path.cwd()
+ARGS_JSON_PATH = THIS_DIR / "input_args.json"
+SRC_DIR = pathlib.Path(__file__).parent.parent.parent.parent
 
 # class Manager:
 #     def __init__(self, task: CMD_MANAGER):
@@ -80,6 +79,7 @@ def create_options(args: List[str], task=Optional[CMD_MANAGER]):
         "options": Options()
         }
     )
+    setattr(manager.options, "use_id", False)
     # manager = Manager(task, Options())
     args_list = read_args_from_json(task)
     output_path_name = ""
@@ -90,6 +90,9 @@ def create_options(args: List[str], task=Optional[CMD_MANAGER]):
  
         if arg == "--show-args":
             show_args = True
+
+        if arg == "--use-id":
+            setattr(manager.options, "use_id", True)
 
         arg_dict = read_args_from_arg_list(args_list, arg)
         if arg_dict is not None:
@@ -193,18 +196,21 @@ def read_default_args(manager, args_list, usr_input_args: List[str]):
         if len(exist_flag):
             continue
         arg_name = arg_dict["name"]
-        arg_value = None if len(arg_dict["default"]) == 0  else arg_dict["default"]
+        arg_value = arg_dict["default"]
+        if isinstance(arg_dict["default"], bool):
+            arg_value = arg_value
+        else:
+            arg_value = None if len(arg_value) == 0 else arg_value
         if arg_name == "precision" and arg_value is not None:
             arg_value = int(arg_value)
 
         if "input_path" == arg_name or "output_path" == arg_name:
             continue
-        elif "path" in arg_name:
-            arg_value = CWD / arg_value
+        elif "path" in arg_name and "database" not in arg_name:
+            arg_value = SRC_DIR / arg_value
             arg_value = arg_value.resolve()
 
         setattr(manager.options, arg_name, arg_value)
-
 
 def handle_missing_path_args(
         manager: Manager,
@@ -218,7 +224,7 @@ def handle_missing_path_args(
     if not hasattr(manager.options, "input_path"):
         input_path_exist = False
         arg_dict = read_args_from_arg_list(args_list, "--input")
-        input_path = CWD / arg_dict["default"]
+        input_path = SRC_DIR / arg_dict["default"]
         setattr(manager.options, "input_path", input_path.resolve())
 
     output_path_isdir = False
@@ -226,7 +232,7 @@ def handle_missing_path_args(
     if not hasattr(manager.options, "output_path"):
         if not input_path_exist:
             arg_dict = read_args_from_arg_list(args_list, "--output")
-            default_dir = CWD / arg_dict["default"]
+            default_dir = SRC_DIR / arg_dict["default"]
             output_path = default_dir.resolve() / manager.options.input_path.name
             output_path_isdir = True
 

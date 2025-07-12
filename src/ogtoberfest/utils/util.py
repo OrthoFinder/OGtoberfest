@@ -43,6 +43,9 @@ class SpeciesInfo(object):
             }
         else:
             self.species2id_dict = {}
+
+        for name, species_id in zip(self.speciesToUseName, self.speciesToUse):
+            print(name, species_id)
         return self.species2id_dict
     
     def get_ids2species(self):

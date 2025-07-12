@@ -6,7 +6,7 @@
                 "--input"
             ],
             "name": "input_path",
-            "default": "./OrthoBench/predicted_orthogroups",
+            "default": "OrthoBench/predicted_orthogroups",
             "action": "",
             "description": "A file or directory containing the original predicted orthogroup file(s)",
             "help": "",
@@ -21,7 +21,7 @@
                 "--output"
             ],
             "name": "output_path",
-            "default": "./OrthoBench",
+            "default": "OrthoBench",
             "action": "",
             "description": "A file or directory containing the format regulated predicted orthogroup file(s)",
             "help": "",
@@ -36,7 +36,7 @@
                 "--database"
             ],
             "name": "database_path",
-            "default": "./OrthoBench/proteomes",
+            "default": "",
             "action": "",
             "description": "A directory containing the fasta files",
             "help": "",
@@ -53,7 +53,7 @@
                 "--input"
             ],
             "name": "input_path",
-            "default": "./Orthologues/predicted_othologues",
+            "default": "Orthologues/predicted_othologues",
             "action": "",
             "description": "A file or directory containing the original predicted orthogroup file(s)",
             "help": "",
@@ -68,7 +68,7 @@
                 "--output"
             ],
             "name": "output_path",
-            "default": "./Orthologues",
+            "default": "Orthologues",
             "action": "",
             "description": "A file or directory containing the format regulated predicted orthogroup file(s)",
             "help": "",
@@ -83,7 +83,7 @@
                 "--database"
             ],
             "name": "database_path",
-            "default": "./Orthologues/database",
+            "default": "",
             "action": "",
             "description": "A directory containing the fasta files",
             "help": "",
@@ -100,7 +100,7 @@
                 "--input"
             ],
             "name": "input_path",
-            "default": "./OrthoBench/preprocessed_predicted_orthogroups",
+            "default": "OrthoBench/preprocessed_predicted_orthogroups",
             "action": "",
             "description": "File containing reference orthogroups",
             "help": "",
@@ -115,7 +115,7 @@
                 "--output"
             ],
             "name": "output_path",
-            "default": "./OrthoBench",
+            "default": "OrthoBench",
             "action": "",
             "description": "Directory containing score files",
             "help": "",
@@ -130,7 +130,7 @@
                 "--database"
             ],
             "name": "database_path",
-            "default": "./OrthoBench/proteomes",
+            "default": "",
             "action": "",
             "description": "A directory containing the fasta files",
             "help": "",
@@ -145,7 +145,7 @@
                 "--refog"
             ],
             "name": "refog_path",
-            "default": "./OrthoBench/reference_orthogroups.tsv",
+            "default": "OrthoBench/reference_orthogroups.tsv",
             "action": "",
             "description": "A file containing the reference Orthogroups",
             "help": "",
@@ -160,7 +160,7 @@
                 "--refog-stats"
             ],
             "name": "refog_stats_path",
-            "default": "./OrthoBench/reference_orthogroups_stats.tsv",
+            "default": "OrthoBench/reference_orthogroups_stats.tsv",
             "action": "",
             "description": "A file containing the reference orthogroups' statistics",
             "help": "",
@@ -175,7 +175,7 @@
                 "--uncertian-refog"
             ],
             "name": "uncertian_refog_path",
-            "default": "./OrthoBench/reference_orthogroups_uncertain.tsv",
+            "default": "OrthoBench/reference_orthogroups_uncertain.tsv",
             "action": "",
             "description": "A file containing the uncertian reference Orthogroups",
             "help": "",
@@ -458,7 +458,7 @@
                 "--input"
             ],
             "name": "input_path",
-            "default": "./Orthologues/preprocessed_predicted_othologues",
+            "default": "Orthologues/preprocessed_predicted_othologues",
             "action": "",
             "description": "File containing reference orthogroups",
             "help": "",
@@ -473,7 +473,7 @@
                 "--output"
             ],
             "name": "output_path",
-            "default": "./Orthologues",
+            "default": "Orthologues",
             "action": "",
             "description": "Directory containing score files",
             "help": "",
@@ -488,7 +488,7 @@
                 "--database"
             ],
             "name": "database_path",
-            "default": "./Orthologues/database",
+            "default": "",
             "action": "",
             "description": "A directory containing the fasta files",
             "help": "",

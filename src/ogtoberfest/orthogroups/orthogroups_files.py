@@ -9,20 +9,30 @@ class OGReader:
 
     def __init__(self, 
                  refog_path, 
-                 uncerain_refog_path: Optional[pathlib.Path]=None
+                 uncerain_refog_path: Optional[pathlib.Path] = None,
+                 species2id_dict: Optional[Dict[str, str]] = None
+                 
     ):
         self.refog_path = refog_path
         self.uncertain_refog_path = uncerain_refog_path
+        self.species2id_dict = species2id_dict
 
 
-    def read_ogs(self, og_path)-> Dict[str, Set[str]]:
+    def read_ogs(self, og_path, database: str = None)-> Dict[str, Set[str]]:
         refogs = {}
         try:
             with open(og_path, "r") as reader:
                 for line in reader:
                     line = line.strip().split(": ")
                     refog_key, genes = line[0], line[-1]
-                    genes = [g.strip() for g in genes.split(", ") if g.strip() != ""]
+                    if database == "OrthoBench":
+                        genes = [
+                            g.strip() for g in genes.split(", ") if g.strip() != ""
+                        ]
+                    else:
+                        genes = [
+                            self.species2id_dict.get(g.strip()) for g in genes.split(", ") if g.strip() != ""
+                        ]
                     refogs[refog_key] = set(genes)
 
         except:
@@ -33,7 +43,7 @@ class OGReader:
     
     def read_orthobench_refogs(self) -> Dict[str, Set[str]]:
         n_expected = 1945
-        refogs = self.read_ogs(self.refog_path)
+        refogs = self.read_ogs(self.refog_path, database="OrthoBench")
         n_genes = np.sum([len(refog) for refog in refogs.values()])
 
         if "uncertain" in self.refog_path.name:
@@ -113,7 +123,9 @@ class OGReader:
                     continue
                 line = line.strip().split("\t")
                 refog_key, genes = line[0], line[-1]
-                genes = [g.strip() for g in genes.split(", ") if g.strip() != ""]
+                genes = [
+                    g.strip() for g in genes.split(", ") if g.strip() != ""
+                ]
                 uncertain_refogs[refog_key] = set(genes)
 
         return uncertain_refogs

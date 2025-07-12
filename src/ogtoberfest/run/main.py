@@ -40,7 +40,8 @@ def preprocess_file(
         file: pathlib.Path,
         funcs_dict: Dict[str, Callable], 
         method_func_name: Optional[str] = None,
-        method: str = None,
+        method: Optional[str] = None,
+        database: Optional[str] = None
     ):
     if method_func_name is not None:
         method_func = funcs_dict[method_func_name]
@@ -55,65 +56,16 @@ def preprocess_file(
                 file,
                 output_path,
                 manager.options.database_path,
+                speciesInfoObj.sequence2id_dict,
+                database,
             )
         else:
             method_func(
                 file,
                 output_path,
+                speciesInfoObj.sequence2id_dict,
+                database,
             )
-
-
-# async def preprocess_file(
-#     speciesInfoObj,
-#     manager,
-#     file: pathlib.Path,
-#     output_path: pathlib.Path,
-#     method_func: Callable, 
-#     method_func_name: Optional[str] = None,
-# ):
-
-#     if inspect.iscoroutinefunction(method_func):
-#         if method_func_name in ["hieranoid", "fastoma", "broccoli", "orthohmm"]:
-#             await method_func(file, output_path, manager.options.database_path)
-#         else:
-#             await method_func(file, output_path)
-#     else:
-#         if method_func_name in ["hieranoid", "fastoma", "broccoli", "orthohmm"]:
-#             method_func(file, output_path, manager.options.database_path)
-#         else:
-#             method_func(file, output_path)
-
-# async def preprocess_tasks(
-#         method_file_list,
-#         speciesInfoObj,
-#         manager,
-#         funcs_dict,
-#         main_task,
-# ):
-#     tasks = []
-#     for method, method_func_name, file in method_file_list:
-#         if method_func_name is None or method is None:
-#             continue
-#         print(f"Processing {file}")
-#         if "orthologues" in main_task:
-#             output_path = manager.options.output_path / method
-#             output_path.mkdir(parents=True, exist_ok=True)
-#             output_path = output_path / f"{method}_all_genes_pairs_combined.txt"
-#         else:
-#             output_path = manager.options.output_path / file.name
-        
-#         method_func = funcs_dict.get(method_func_name)
-#         task = preprocess_file(
-#             speciesInfoObj,
-#             manager,
-#             file,
-#             output_path,
-#             method_func,
-#             method_func_name,
-#         )
-#         tasks.append(task)
-
-#     await asyncio.gather(*tasks)
 
 def compute_scores(
         file,
@@ -265,8 +217,10 @@ def main(args: Optional[List[str]] = None):
         method = method.lower()
         method_func_name = method_name_maps.get(method)
         method_file_list.append((method, method_func_name, manager.options.input_path))
-
-   
+    
+    database = "OrthoBench" \
+        if "orthobench" == manager.options.input_path.parent.name.lower() \
+            or not manager.options.use_id else None
     ## ----------------------------- Preprocessing ---------------------------
     if "preprocess" in  main_task:
         if main_task == "orthogroups_preprocess":
@@ -274,16 +228,6 @@ def main(args: Optional[List[str]] = None):
         elif main_task == "orthologues_preprocess":
             funcs_dict = util.get_func_name(orthologues_preprocess)
 
-        # asyncio.run(
-        #     preprocess_tasks(
-        #         method_file_list,
-        #         speciesInfoObj,
-        #         manager,
-        #         funcs_dict,
-        #         main_task,
-        #     )
-        # )
-    
         if manager.options.input_path.is_dir():
             for dir_file in manager.options.input_path.iterdir():
                 method = re.split("_|\.", dir_file.name)[0]
@@ -307,7 +251,8 @@ def main(args: Optional[List[str]] = None):
                         dir_file,
                         funcs_dict, 
                         method_func_name,
-                        method
+                        method,
+                        database=database
                     ) 
                 else:
                     for file in dir_file.iterdir():
@@ -320,6 +265,7 @@ def main(args: Optional[List[str]] = None):
                             funcs_dict, 
                             method_func_name,
                             method,
+                            database=database
                         ) 
 
 
@@ -338,6 +284,7 @@ def main(args: Optional[List[str]] = None):
                 manager.options.input_path,
                 funcs_dict,
                 method_func_name,
+                database=database
             )
         print(f"All the files have been preprocessed!")
         sys.exit(0)
@@ -430,10 +377,11 @@ def main(args: Optional[List[str]] = None):
             #     predogs_dict[method_func_name] = \
             #         ogreader.read_orthobench_predogs(manager.options.input_path)
                 
-        elif "sim" in manager.options.input_path.parent.name.lower():
+        else: #if "sim" in manager.options.input_path.parent.name.lower():
             ogreader = orthogroups_files.OGReader(
                 manager.options.refog_path, 
-                manager.options.uncertian_refog_path
+                manager.options.uncertian_refog_path,
+                speciesInfoObj.sequence2id_dict
             )
             refogs_dict = ogreader.read_ogs(manager.options.refog_path)
             refogs_nspecies_dict, refogs_ngenes_dict = \
@@ -450,7 +398,7 @@ def main(args: Optional[List[str]] = None):
                 method = re.split("_|\.", file.name)[0]
                 method = method.lower()
                 method_func_name = method_name_maps.get(method)
-                predogs_dict[method_func_name] = ogreader.read_ogs(file)
+                predogs_dict[method_func_name] = ogreader.read_ogs(file, database=database)
                 global_scores_dict, local_scores_dict, other_info, complete_predog_dict = \
                     compute_scores(
                         file,

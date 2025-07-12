@@ -3,11 +3,17 @@ import argparse
 import os
 import pathlib
 import re
-from typing import Optional
+from typing import Optional, Dict
 from ete3 import Tree
 
 
-def hieranoid(input_file, output_file, protemes_dir: pathlib.Path):
+def hieranoid(
+        input_file, 
+        output_file, 
+        protemes_dir: pathlib.Path, 
+        sequence2id_dict: Optional[Dict[str, str]] = None,
+        database: Optional[str] = None,
+    ):
 
     species_gene_dict = {}
     for file in protemes_dir.iterdir():
@@ -29,15 +35,26 @@ def hieranoid(input_file, output_file, protemes_dir: pathlib.Path):
                     if node.is_leaf():
                         species = species_gene_dict.get(node.name)
                         if species is not None:
-                            ogs.add(species + "." + node.name)
+                            gene_name = species + "." + node.name
                         else:
-                            ogs.add(node.name)
+                            gene_name = node.name
+                        if database == "OrthoBench":
+                            ogs.add(gene_name)
+                        else:
+                            gene_id = sequence2id_dict.get(gene_name)
+                            if gene_id is not None:
+                                ogs.add(gene_id)
 
                 og = og_name + ": " + ", ".join(ogs)
                 writer.write(og + "\n")
 
 
-def orthomcl(input_file, output_file):
+def orthomcl(
+        input_file, 
+        output_file, 
+        sequence2id_dict: Optional[Dict[str, str]] = None,
+        database: Optional[str] = None
+    ):
     with open(output_file, "w") as writer:
         with open(input_file, "r") as reader:
             single_gene_og = []
@@ -55,7 +72,13 @@ def orthomcl(input_file, output_file):
                 for item in line.split(": ", 1)[1].split(" "):
                     if "combined" not in item:
                         gene = item.strip().replace("|", ".").replace("adjusted_", "")
-                        genes.append(gene)
+                        gene = gene.strip(",")
+                        if database == "OrthoBench":
+                            genes.append(gene)
+                        else:
+                            gene_id = sequence2id_dict.get(gene)
+                            if gene_id is not None:
+                                genes.append(gene_id)
 
                 if len(genes) > 1:
                     og = gname + ": " + ", ".join(genes)
@@ -91,7 +114,12 @@ def orthomcl(input_file, output_file):
 #                     writer.write(og + "\n")
 #                     n += 1
 
-def orthofinder(input_file, output_file):
+def orthofinder(
+        input_file, 
+        output_file, 
+        sequence2id_dict: Optional[Dict[str, str]] = None,
+        database: Optional[str] = None
+    ):
     old_version = True
     with open(output_file, "w") as writer:
         with open(input_file, "r") as reader:
@@ -114,29 +142,62 @@ def orthofinder(input_file, output_file):
                         genes_list = line[3:]
                     else:
                         genes_list = line[1:]
-
+                    
                     genes = []
                     for i, gene in enumerate(genes_list):
                         if len(gene) == 0:
                             continue
-                        if species_list[i] not in gene:
-                            genes.append(
-                                ", ".join(
-                                    [
-                                        species_list[i] + "." + g
-                                        for g in re.split(" |,", gene)
-                                        if len(g) != 0
-                                    ]
+                        if database == "OrthoBench":
+                            if species_list[i] not in gene:
+                                genes.append(
+                                    ", ".join(
+                                        [
+                                            species_list[i] + "." + g
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    )
                                 )
-                            )
+                            else:
+                                genes.append(                                    
+                                    ", ".join(
+                                        [
+                                            g
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    )
+                                )
                         else:
-                            genes.append(gene)
-
+                            if species_list[i] not in gene:
+                                genes.append(
+                                    ", ".join(
+                                        [
+                                            sequence2id_dict.get(species_list[i] + "." + g)
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    )
+                                )
+                            else:
+                                genes.append(                                    
+                                    ", ".join(
+                                        [
+                                            sequence2id_dict.get(g)
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    )
+                                )
                     og = predog_key + ": " + ", ".join(genes)
                     writer.write(og + "\n")
 
-
-def sonicparanoid(input_file, output_file):
+def sonicparanoid(
+        input_file, 
+        output_file, 
+        sequence2id_dict: Optional[Dict[str, str]] = None,
+        database: Optional[str] = None
+    ):
     with open(output_file, "w") as writer:
         with open(input_file, "r") as reader:
             for n, line in enumerate(reader):
@@ -152,30 +213,57 @@ def sonicparanoid(input_file, output_file):
                     for i, gene in enumerate(genes_list):
                         if gene == "*":
                             continue
-                        if species_list[i] not in gene:
-                            genes.append(
-                                ", ".join(
-                                    [
-                                        species_list[i] + "." + g
-                                        for g in re.split(" |,", gene)
-                                        if len(g) != 0
-                                    ]
+
+                        if database == "OrthoBench":
+                            if species_list[i] not in gene:
+                                genes.append(
+                                    ", ".join(
+                                        [
+                                            species_list[i] + "." + g
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    )
                                 )
-                            )
+                            else:
+                                genes.append(
+                                    ", ".join(
+                                        [
+                                            g
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    ))
                         else:
-                            genes.append(
-                                ", ".join(
-                                    [
-                                        g
-                                        for g in re.split(" |,", gene)
-                                        if len(g) != 0
-                                    ]
-                                ))
+                            if species_list[i] not in gene:
+                                genes.append(
+                                    ", ".join(
+                                        [
+                                            sequence2id_dict.get(species_list[i] + "." + g)
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    )
+                                )
+                            else:
+                                genes.append(
+                                    ", ".join(
+                                        [
+                                            sequence2id_dict.get(g)
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    ))
                     og = predog_key + ": " + ", ".join(genes)
                     writer.write(og + "\n")
 
 
-def broccoli_v1(input_file, output_file):
+def broccoli_v1(
+        input_file, 
+        output_file, 
+        sequence2id_dict: Optional[Dict[str, str]] = None,
+        database: Optional[str] = None
+    ):
 
     with open(output_file, "w") as writer:
         with open(input_file, "r") as reader:
@@ -192,28 +280,54 @@ def broccoli_v1(input_file, output_file):
                     for i, gene in enumerate(genes_list):
                         if gene == "":
                             continue
-                        if species_list[i] not in gene:
-                            genes.append(
-                                ", ".join(
-                                    [
-                                        species_list[i] + "." + g
-                                        for g in re.split(" |,", gene)
-                                        if len(g) != 0
-                                    ]
+                        if database == "OrthoBench":
+                            if species_list[i] not in gene:
+                                genes.append(
+                                    ", ".join(
+                                        [
+                                            species_list[i] + "." + g
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    )
                                 )
-                            )
+                            else:
+                                genes.append( ", ".join(
+                                        [
+                                            g
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    ))
                         else:
-                            genes.append( ", ".join(
-                                    [
-                                        g
-                                        for g in re.split(" |,", gene)
-                                        if len(g) != 0
-                                    ]
-                                ))
+                            if species_list[i] not in gene:
+                                genes.append(
+                                    ", ".join(
+                                        [
+                                            sequence2id_dict.get(species_list[i] + "." + g)
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    )
+                                )
+                            else:
+                                genes.append( ", ".join(
+                                        [
+                                            sequence2id_dict.get(g)
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    ))
                     og = predog_key + ": " + ", ".join(genes)
                     writer.write(og + "\n")
 
-def broccoli_v2(input_file, output_file, protemes_dir: pathlib.Path):
+def broccoli_v2(
+        input_file, 
+        output_file, 
+        protemes_dir: pathlib.Path, 
+        sequence2id_dict: Optional[Dict[str, str]] = None,
+        database: Optional[str] = None
+    ):
     species_gene_dict = {}
 
     for file in protemes_dir.iterdir():
@@ -239,29 +353,46 @@ def broccoli_v2(input_file, output_file, protemes_dir: pathlib.Path):
                         continue
                     species = species_gene_dict.get(gene)
                     if species is not None:
-                        genes.append(species + "." + gene)
+                        gene_name = species + "." + gene
+
                     else:
-                        genes.append(gene)
+                        gene_name = gene
+                    if database == "OrthoBench":
+                        genes.append(gene_name)
+                    else:
+                        genes.append(sequence2id_dict.get(gene_name))
+
                 og = predog_key + ": " + ", ".join(genes)
                 writer.write(og + "\n")
 
-def broccoli(input_file, output_file, protemes_dir: Optional[pathlib.Path] = None,):
+def broccoli(
+        input_file, 
+        output_file, 
+        protemes_dir: Optional[pathlib.Path] = None,
+        sequence2id_dict: Optional[Dict[str, str]] = None,
+        database: Optional[str] = None
+    ):
 
     with open(input_file) as f:
         header = f.readline().strip('\n')
 
     if "protein_names" in header:
         if protemes_dir is not None:
-            broccoli_v2(input_file, output_file, protemes_dir)
+            broccoli_v2(input_file, output_file, protemes_dir, sequence2id_dict, database)
         else:
             print(f"{input_file.name} requires species information,"
                   " please provide the path for the database!")
             return 
     else:
-        broccoli_v1(input_file, output_file)
+        broccoli_v1(input_file, output_file, sequence2id_dict, database)
 
 
-def proteinortho(input_file, output_file):
+def proteinortho(
+        input_file, 
+        output_file, 
+        sequence2id_dict: Optional[Dict[str, str]] = None,
+        database: Optional[str] = None
+    ):
     predog_base_name = "PredOG%07d"
     with open(output_file, "w") as writer:
         with open(input_file, "r") as reader:
@@ -278,22 +409,59 @@ def proteinortho(input_file, output_file):
                     for i, gene in enumerate(genes_list):
                         if gene == "*":
                             continue
-                        if species_list[i] not in gene:
-                            genes.append(
-                                ", ".join(
-                                    [
-                                        species_list[i] + "." + g
-                                        for g in re.split(" |,", gene)
-                                        if len(g) != 0
-                                    ]
+                        if database == "OrthoBench":
+                            if species_list[i] not in gene:
+                                genes.append(
+                                    ", ".join(
+                                        [
+                                            species_list[i] + "." + g
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    )
                                 )
-                            )
+                            else:
+                                genes.append(                                    
+                                    ", ".join(
+                                        [
+                                            g
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    )
+                                )
                         else:
-                            genes.append(gene)
+                            if species_list[i] not in gene:
+                                genes.append(
+                                    ", ".join(
+                                        [
+                                            sequence2id_dict.get(species_list[i] + "." + g)
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    )
+                                )
+                            else:
+                                genes.append(                                    
+                                    ", ".join(
+                                        [
+                                            sequence2id_dict.get(g)
+                                            for g in re.split(" |,", gene)
+                                            if len(g) != 0
+                                        ]
+                                    )
+                                )
                     og = predog_key + ": " + ", ".join(genes)
                     writer.write(og + "\n")
 
-def fastoma(input_file, output_file, protemes_dir: pathlib.Path):
+def fastoma(
+        input_file, 
+        output_file, 
+        protemes_dir: pathlib.Path, 
+        sequence2id_dict: Optional[Dict[str, str]] = None,
+        database: Optional[str] = None
+    ):
+
     species_gene_dict = {}
 
     for file in protemes_dir.iterdir():
@@ -314,16 +482,22 @@ def fastoma(input_file, output_file, protemes_dir: pathlib.Path):
             predog_key, gene = line.split("\t")[:2]
             predog_key = predog_key.replace(":", "")
             gene = gene.strip()
+
             species = species_gene_dict.get(gene) 
             if species is not None:
                 predog_gene = species + "." + gene
             else:
                 predog_gene = gene
-
+            if database == "OrthoBench":
+                predog_gene_id = predog_gene
+            else:
+                predog_gene_id = sequence2id_dict.get(predog_gene)
+            if predog_gene_id is None:
+                continue
             if predog_key not in predog_dict:
-                predog_dict[predog_key] = [predog_gene]
+                predog_dict[predog_key] = [predog_gene_id]
             elif predog_key in predog_dict:
-                predog_dict[predog_key].append(predog_gene)
+                predog_dict[predog_key].append(predog_gene_id)
 
     with open(output_file, "w") as writer:      
         for predog_key, genes in predog_dict.items():
@@ -331,7 +505,12 @@ def fastoma(input_file, output_file, protemes_dir: pathlib.Path):
             writer.write(og + "\n")
 
 
-def swiftortho(input_file, output_file):
+def swiftortho(
+        input_file, 
+        output_file, 
+        sequence2id_dict: Optional[Dict[str, str]] = None,
+        database: Optional[str] = None
+    ):
     predog_base_name = "PredOG%07d"
     with open(output_file, "w") as writer:
         with open(input_file, "r") as reader:
@@ -344,15 +523,27 @@ def swiftortho(input_file, output_file):
                         continue
                     species, gene = gene.split("|")
                     if species == gene.split(".", 1)[0]:
-                        genes.append(gene)
+                        gene_name = gene
+                        
                     else:
-                        genes.append(species + "." + gene)
-                    
+                        gene_name = species + "." + gene
+                    if database == "OrthoBench":
+                        genes.append(gene_name)
+                    else:
+                        gene_id = sequence2id_dict.get(gene_name)
+                        if gene_id is not None:
+                            genes.append(gene_id)
                 og = predog_key + ": " + ", ".join(genes)
                 writer.write(og + "\n")
 
 
-def orthohmm(input_file, output_file, protemes_dir: pathlib.Path):
+def orthohmm(
+        input_file, 
+        output_file, 
+        protemes_dir: pathlib.Path,
+        sequence2id_dict: Optional[Dict[str, str]] = None,
+        database: Optional[str] = None
+    ):
     species_gene_dict = {}
 
     for file in protemes_dir.iterdir():
@@ -376,9 +567,17 @@ def orthohmm(input_file, output_file, protemes_dir: pathlib.Path):
                         continue
                     species = species_gene_dict.get(gene) 
                     if species is not None:
-                        genes.append(species + "." + gene)
+                        gene_name = species + "." + gene
+                        
                     else:
-                        genes.append(gene)
+                        gene_name = gene
+                     
+                    if database == "OrthoBench":
+                        genes.append(gene_name)
+                    else:
+                        gene_id = sequence2id_dict.get(gene_name)
+                        if gene_id is not None:
+                            genes.append(gene_id)
                 if len(genes) > 1:
                     og = predog_key + ": " + ", ".join(genes)
                     writer.write(og + "\n")

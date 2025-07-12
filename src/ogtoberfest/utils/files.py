@@ -129,6 +129,10 @@ class FileHandler:
                                 .replace("(", "_")
                                 .replace(")", "_")
                             )
+
+                            if accession.split(".")[0].lower() != baseFilename.split(".")[0].lower():
+                                accession = baseFilename.split(".")[0] + "." + accession
+                                
                             speciesInfoObj.sequence2id_dict[accession] = sequence_id
                             speciesInfoObj.id2sequence_dict[sequence_id] = accession
 
