@@ -124,6 +124,7 @@ def get_scores(
         ref_ogs: Dict[str, Set[str]],
         pred_ogs: Dict[str, Set[str]],
         precision: int,
+        nthreads: int
     ):
 
     V_prime = sf.V_raw_to_V_prime(ref_ogs, pred_ogs)
@@ -160,19 +161,19 @@ def get_scores(
     total_num_species_predog_overlap = len(
         set(util.flatten_list_of_list([*predog_species_dict_overlap.values()]))
     )
+    if nthreads == 1:
+        print("\nCalculating benchmarks:")
+        print("%d  Number of RefOGs" % len(ref_ogs))
+        print("%d  Number of species in RefOGs" % total_num_species_refog)
+        print("%d  Number of genes in RefOGs" % N)
+        print("%d  Number of PredOGs" % len(pred_ogs))
+        print("%d  Number of species in PredOGs" % total_num_species_predog_raw)
+        print("%d  Number of genes in PredOGs" % M_raw)
+        print("%d  Number of PredOGs (overlap)" % len(V))
+        print("%d  Number of species in PredOGs (overlap)" % total_num_species_predog_overlap)
+        print("%d  Number of genes in PredOGs (overlap)" % M)
 
-    print("\nCalculating benchmarks:")
-    print("%d  Number of RefOGs" % len(ref_ogs))
-    print("%d  Number of species in RefOGs" % total_num_species_refog)
-    print("%d  Number of genes in RefOGs" % N)
-    print("%d  Number of PredOGs" % len(pred_ogs))
-    print("%d  Number of species in PredOGs" % total_num_species_predog_raw)
-    print("%d  Number of genes in PredOGs" % M_raw)
-    print("%d  Number of PredOGs (overlap)" % len(V))
-    print("%d  Number of species in PredOGs (overlap)" % total_num_species_predog_overlap)
-    print("%d  Number of genes in PredOGs (overlap)" % M)
-
-    print()
+        print()
 
     (
         gene_pair_TP,
@@ -194,8 +195,10 @@ def get_scores(
 
     missing_predogs_list = sf.missing_predogs(V_prime)
     missing_predogs = len(missing_predogs_list) / len(ref_ogs)
-    print("%0.1f%%  Missing RefOGs" % (100.0 * missing_predogs))
-    print("%0.1f%%  Missing Speciess" % (100.0 * missing_species_refogs))
+
+    if nthreads == 1:
+        print("%0.1f%%  Missing RefOGs" % (100.0 * missing_predogs))
+        print("%0.1f%%  Missing Speciess" % (100.0 * missing_species_refogs))
 
     (
         total_missing_genes,
@@ -206,7 +209,8 @@ def get_scores(
     ) = sf.check_missing_genes(ref_ogs, V_prime, precision)
 
     missing_genes = total_missing_genes / N
-    print("%0.1f%%  Missing Genes" % (100.0 * missing_genes))
+    if nthreads == 1:
+        print("%0.1f%%  Missing Genes" % (100.0 * missing_genes))
 
     fusion_refog_set, fusion_predog_dict, fusion_refog_bool_dict = sf.fusion(ref_ogs, V_prime, V)
     fusion_refog_score = len(fusion_refog_set) / len(ref_ogs)
@@ -214,7 +218,9 @@ def get_scores(
         fusion_predog_score = len(fusion_predog_dict) / len(V)
     else:
         fusion_predog_score = 0.0
-    print("%0.1f%%  RefOG Fusions" % (100.0 * fusion_refog_score))
+
+    if nthreads == 1:
+        print("%0.1f%%  RefOG Fusions" % (100.0 * fusion_refog_score))
     # print("%0.1f%%  PredOG Fusion" % (100.0 * fusion_predog_score))
 
     fission_refog_set, fission_predog_set, fission_refog_bool_dict = sf.fission(ref_ogs, V_prime)
@@ -223,7 +229,8 @@ def get_scores(
         fission_predog_score = len(fission_predog_set) / len(V)
     else:
         fission_predog_score = 0.0
-    print("%0.1f%%  RefOG Fissions" % (100.0 * fission_refog_score))
+    if nthreads == 1:
+        print("%0.1f%%  RefOG Fissions" % (100.0 * fission_refog_score))
     # print("%0.1f%%  PredOG Fissions" % (100.0 * fission_predog_score))
     # print()
 
@@ -289,27 +296,28 @@ def get_scores(
         for refog_key, tp_dict in all_TP_dict.items()
     }
 
-    # print("%0.1f%%  macro Recall" % (100. * macro_recall))
-    # print("%0.1f%%  macro Precision" % (100. * macro_precision))
-    # print("%0.1f%%  macro F1-score" % (100. * macro_f1score))
-    # print("%0.1f%%  macro Fowlkes Mallows Index" % (100. * macro_fowlkes_mallows))
-    # print("%0.1f%%  macro Jaccard Index" % (100. * macro_JI))
-    # print("%0.1f%%  macro Disimilarity" % (100. * macro_dissimilarity))
-    # print("%0.2f   macro Distance" % (macro_distance))
-    # print("%0.2f   macro Disimilarity Distance" % (macro_dissimilarity_distance))
-    # print()
-
-    print("%0.1f%%  Weighted Avg Recall" % (100.0 * avg_weighted_recall))
-    print("%0.1f%%  Weighted Avg Precision" % (100.0 * avg_weighted_precision))
-    print("%0.1f%%  Weighted Avg F1-score" % (100.0 * avg_weighted_f1score))
-    # print("%0.1f%%  Weighted Avg Fowlkes Mallows Index" % (100. * avg_weighted_fowlkes_mallows))
-    # print("%0.1f%%  Weighted Avg Jaccard Index" % (100. * avg_weighted_JI))
-    # print("%0.1f%%  Weighted Avg Disimilarity" % (100. * avg_weighted_dissimilarity))
-    # print("%0.2f   Weighted Avg Distance" % (avg_weighted_distance))
-    # print()
-
     total_entropy, entropy_dict = sf.entropy_score(ref_ogs, V_prime, N)
-    print("%0.2f  Entropy" % (total_entropy))
+    if nthreads == 1:
+        # print("%0.1f%%  macro Recall" % (100. * macro_recall))
+        # print("%0.1f%%  macro Precision" % (100. * macro_precision))
+        # print("%0.1f%%  macro F1-score" % (100. * macro_f1score))
+        # print("%0.1f%%  macro Fowlkes Mallows Index" % (100. * macro_fowlkes_mallows))
+        # print("%0.1f%%  macro Jaccard Index" % (100. * macro_JI))
+        # print("%0.1f%%  macro Disimilarity" % (100. * macro_dissimilarity))
+        # print("%0.2f   macro Distance" % (macro_distance))
+        # print("%0.2f   macro Disimilarity Distance" % (macro_dissimilarity_distance))
+        # print()
+
+        print("%0.1f%%  Weighted Avg Recall" % (100.0 * avg_weighted_recall))
+        print("%0.1f%%  Weighted Avg Precision" % (100.0 * avg_weighted_precision))
+        print("%0.1f%%  Weighted Avg F1-score" % (100.0 * avg_weighted_f1score))
+        # print("%0.1f%%  Weighted Avg Fowlkes Mallows Index" % (100. * avg_weighted_fowlkes_mallows))
+        # print("%0.1f%%  Weighted Avg Jaccard Index" % (100. * avg_weighted_JI))
+        # print("%0.1f%%  Weighted Avg Disimilarity" % (100. * avg_weighted_dissimilarity))
+        # print("%0.2f   Weighted Avg Distance" % (avg_weighted_distance))
+        # print()
+        print("%0.2f  Entropy" % (total_entropy))
+        print()
 
     # precision_weighted_KLD = sf.kl_divergence(ref_ogs, effective_size_precision_weighted_dict, N, M)
     # JI_weighted_KLD = sf.kl_divergence(ref_ogs, effective_size_JI_weighted_dict, N, M)
@@ -318,7 +326,7 @@ def get_scores(
     # print("%0.2f  Precision Weighted KLD" % (precision_weighted_KLD))
     # print("%0.2f  Jaccard Index Weighted KLD" % (JI_weighted_KLD))
     # print("%0.2f  Jaccard Index refOG Weighted KLD" % (JI_refog_weighted_KLD))
-    print()
+    
 
     global_stats_dict = {
         "nrefogs": len(ref_ogs),

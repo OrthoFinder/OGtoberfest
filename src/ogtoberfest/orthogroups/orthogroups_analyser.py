@@ -38,7 +38,8 @@ def get_expected_genes(
         with open(fpath, "r") as infile:
             for l in infile:
                 if l.startswith(">"):
-                    all_genes.add(l[1:].rstrip())
+                    gene = species + "." + l[1:].rstrip()
+                    all_genes.add(gene)
 
     # assert len(all_genes) == n_genes_total, f"species_of_interest {len(species_of_interest)} all_genes {len(all_genes)} vs. n_genes_tatal {n_genes_total}"
 

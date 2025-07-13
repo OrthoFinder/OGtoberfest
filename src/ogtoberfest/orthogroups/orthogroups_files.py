@@ -7,16 +7,15 @@ import numpy as np
 
 class OGReader:
 
-    def __init__(self, 
-                 refog_path, 
-                 uncerain_refog_path: Optional[pathlib.Path] = None,
-                 species2id_dict: Optional[Dict[str, str]] = None
-                 
+    def __init__(
+            self, 
+            refog_path, 
+            uncerain_refog_path: Optional[pathlib.Path] = None,
+            species2id_dict: Optional[Dict[str, str]] = None        
     ):
         self.refog_path = refog_path
         self.uncertain_refog_path = uncerain_refog_path
         self.species2id_dict = species2id_dict
-
 
     def read_ogs(self, og_path, use_id: bool = True)-> Dict[str, Set[str]]:
         refogs = {}
