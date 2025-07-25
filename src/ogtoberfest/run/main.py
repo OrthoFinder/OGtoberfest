@@ -111,6 +111,7 @@ def main(args: Optional[List[str]] = None):
             manager.options.output_path,
             input_path_isfile,
             speciesInfoObj.id2sequence_dict,
+            speciesInfoObj.id2species_dict,
             use_id
         )
 

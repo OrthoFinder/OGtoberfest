@@ -11,7 +11,7 @@ class OGReader:
             self, 
             refog_path, 
             uncerain_refog_path: Optional[pathlib.Path] = None,
-            species2id_dict: Optional[Dict[str, str]] = None        
+            species2id_dict: Optional[Dict[str, str]] = None,       
     ):
         self.refog_path = refog_path
         self.uncertain_refog_path = uncerain_refog_path
@@ -256,9 +256,11 @@ class FileWriter(FileHandler):
             output_path: pathlib.Path, 
             input_path_isfile: bool = False,
             id2sequence_dict: Optional[Dict[str, str]] = None,
+            id2species_dict: Optional[Dict[str, str]] = None,
             use_id: bool = True
         ):
         self.id2sequence_dict = id2sequence_dict
+        self.id2species_dict = id2species_dict
         self.use_id = use_id
         super().__init__(output_path, input_path_isfile)
 
@@ -372,17 +374,30 @@ class FileWriter(FileHandler):
         colnames = ["RefOGs", "Missing Species", "Missing Genes"]
         colnames_str = "\t".join(colnames)
         other_info_filepath = self.missing_genes_path / filename
+
         with open(other_info_filepath, "w") as writer:
             writer.write(colnames_str + "\n")
             for refog_key, missing_genes in missing_genes_dict.items():
                 missing_species = missing_species_dict[refog_key]
                 if self.use_id:
+
                     missing_species = [
-                        self.id2sequence_dict.get(ms)
+                        self.id2species_dict.get(str(ms))
                         for ms in missing_species
                     ]
-                missing_species_str = ", ".join(missing_species)
-                missing_genes_str = ", ".join(missing_genes)
+
+                    missing_genes = [
+                        self.id2sequence_dict.get(ms)
+                        for ms in missing_genes
+                    ]
+
+                missing_species_str, missing_genes_str = "", ""
+
+                if all(ms is not None for ms in missing_species):
+                    missing_species_str = ", ".join(missing_species)
+
+                if all(ms is not None for ms in missing_genes):
+                    missing_genes_str = ", ".join(missing_genes)
                 writer.write("\t".join((refog_key, missing_species_str, missing_genes_str)) + "\n")
 
     def save_fusion_genes(self, 

@@ -124,7 +124,8 @@ def get_scores(
         ref_ogs: Dict[str, Set[str]],
         pred_ogs: Dict[str, Set[str]],
         precision: int,
-        nthreads: int
+        nthreads: int,
+        use_id: bool = False
     ):
 
     V_prime = sf.V_raw_to_V_prime(ref_ogs, pred_ogs)
@@ -134,16 +135,16 @@ def get_scores(
     M = np.sum([len(predog) for predog in V.values()])
     M_raw = np.sum([len(predog) for predog in pred_ogs.values()])
 
-    refog_species_dict = opa.get_species_dict(ref_ogs)
-    predog_species_dict_raw = opa.get_species_dict(pred_ogs)
-    predog_species_dict_overlap = opa.get_species_dict(V)
-    predog_species_dict_prime = opa.get_predog_species_dict(V_prime)
+    refog_species_dict = opa.get_species_dict(ref_ogs, use_id=use_id)
+    predog_species_dict_raw = opa.get_species_dict(pred_ogs, use_id=use_id)
+    predog_species_dict_overlap = opa.get_species_dict(V, use_id=use_id)
+    predog_species_dict_prime = opa.get_predog_species_dict(V_prime, use_id=use_id)
     #
     num_species_refog_dict = opa.get_num_species_dict(refog_species_dict)
     num_species_predog_dict_raw = opa.get_num_species_dict(predog_species_dict_raw)
     num_species_predog_dict_overlap = opa.get_num_species_dict(predog_species_dict_overlap)
     num_species_predog_dict_prime = opa.get_predog_num_species_dict(predog_species_dict_prime)
-    
+
     missing_species_dict, missing_species_count_dict, missing_species_percent_dict = \
         sf.check_missing_species(refog_species_dict, predog_species_dict_prime, precision)
     missing_species_refogs_num = np.sum([

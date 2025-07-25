@@ -137,21 +137,38 @@ def get_predog_num_species_dict(predog_species_dict):
     }
     return num_species_predog_dict
 
-def get_species_dict(ogs_dict):
-    species_dict = {
-        og_key: set([og.split(".", 1)[0] for og in ogs]) for og_key, ogs in ogs_dict.items()
-    }
+def get_species_dict(ogs_dict, use_id: False):
+
+    if use_id:
+        species_dict = {
+            og_key: set([og.split("_", 1)[0] for og in ogs]) for og_key, ogs in ogs_dict.items()
+        }
+    else:
+        species_dict = {
+            og_key: set([og.split(".", 1)[0] for og in ogs]) for og_key, ogs in ogs_dict.items()
+        }
+
     return species_dict
 
-def get_predog_species_dict(predogs_reformated):
+def get_predog_species_dict(predogs_reformated, use_id=False):
 
-    predog_species_dict = {
-        refog_key: {
-            predog_key: set([og.split(".", 1)[0] for og in predog])
-            for predog_key, predog in predogs.items()
+
+    if use_id:
+        predog_species_dict = {
+            refog_key: {
+                predog_key: set([og.split("_", 1)[0] for og in predog])
+                for predog_key, predog in predogs.items()
+            }
+            for refog_key, predogs in predogs_reformated.items()
         }
-        for refog_key, predogs in predogs_reformated.items()
-    }
+    else:
+        predog_species_dict = {
+            refog_key: {
+                predog_key: set([og.split(".", 1)[0] for og in predog])
+                for predog_key, predog in predogs.items()
+            }
+            for refog_key, predogs in predogs_reformated.items()
+        }
     return predog_species_dict
 
 def add_missing_genes(

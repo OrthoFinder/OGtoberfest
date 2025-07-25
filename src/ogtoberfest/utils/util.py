@@ -24,6 +24,8 @@ class SpeciesInfo(object):
         self.speciesToUseName = []
         self.sequence2id_dict = {}
         self.id2sequence_dict = {}
+        self.id2species_dict = {}
+        self.species2id_dict = {}
         
     def __str__(self):
         return str((self.speciesToUse, self.nSpAll, self.iFirstNewSpecies))
