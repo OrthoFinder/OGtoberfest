@@ -35,7 +35,10 @@ def hieranoid(
                     if node.is_leaf():
                         species = species_gene_dict.get(node.name)
                         if species is not None:
-                            gene_name = species + "." + node.name
+                            if species not in gene:
+                                gene_name = species + "." + node.name
+                            else:
+                                gene_name = gene
                         else:
                             gene_name = node.name
                         if database == "OrthoBench":
@@ -352,9 +355,12 @@ def broccoli_v2(
                     if len(gene) == 0:
                         continue
                     species = species_gene_dict.get(gene)
-                    if species is not None:
-                        gene_name = species + "." + gene
 
+                    if species is not None:
+                        if species not in gene:
+                            gene_name = species + "." + gene
+                        else:
+                            gene_name = gene
                     else:
                         gene_name = gene
                     if database == "OrthoBench":
@@ -471,7 +477,6 @@ def fastoma(
                 if ">" in line:
                     gene = line[1:].strip().split(".", 1)[-1]
                     species_gene_dict[gene] = species
-
     predog_dict = {}
     with open(input_file, "r") as reader:
         for i, line in enumerate(reader):
@@ -482,16 +487,21 @@ def fastoma(
             predog_key, gene = line.split("\t")[:2]
             predog_key = predog_key.replace(":", "")
             gene = gene.strip()
-
+      
             species = species_gene_dict.get(gene) 
             if species is not None:
-                predog_gene = species + "." + gene
+                if species not in gene:
+                    predog_gene = species + "." + gene
+                else:
+                    predog_gene = gene
             else:
                 predog_gene = gene
+
             if database == "OrthoBench":
                 predog_gene_id = predog_gene
             else:
                 predog_gene_id = sequence2id_dict.get(predog_gene)
+
             if predog_gene_id is None:
                 continue
             if predog_key not in predog_dict:
@@ -526,7 +536,10 @@ def swiftortho(
                         gene_name = gene
                         
                     else:
-                        gene_name = species + "." + gene
+                        if species not in gene:
+                            gene_name = species + "." + gene
+                        else:
+                            gene_name = gene
                     if database == "OrthoBench":
                         genes.append(gene_name)
                     else:
@@ -567,8 +580,10 @@ def orthohmm(
                         continue
                     species = species_gene_dict.get(gene) 
                     if species is not None:
-                        gene_name = species + "." + gene
-                        
+                        if species not in gene:
+                            gene_name = species + "." + gene
+                        else:
+                            gene_name = gene
                     else:
                         gene_name = gene
                      

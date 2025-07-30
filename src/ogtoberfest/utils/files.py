@@ -109,6 +109,16 @@ class FileHandler:
                 baseFilename, extension = os.path.splitext(fastaFilename)
                 speciesInfoObj.speciesToUseName.append(baseFilename)
 
+                species_name = (
+                    baseFilename.split(".")[0].replace(":", "_")
+                    .replace(",", "_")
+                    .replace("(", "_")
+                    .replace(")", "_")
+                    .replace(" ", "_")
+                )
+                speciesInfoObj.species2id_dict[species_name] = iSpecies
+                speciesInfoObj.id2species_dict[iSpecies] = species_name
+                
                 mLinesToCheck = 100
                 qHasAA = False
                 with open(self.fasta_dir / fastaFilename, 'r') as fastaFile:
@@ -123,6 +133,7 @@ class FileHandler:
                             sequence_ids_file.write("%s: %s\n" % (newID, acc))
 
                             sequence_id = newID.replace("#", "").strip()
+
                             accession = (
                                 acc.replace(":", "_")
                                 .replace(",", "_")
@@ -130,9 +141,12 @@ class FileHandler:
                                 .replace(")", "_")
                             )
 
-                            if accession.split(".")[0].lower() != baseFilename.split(".")[0].lower():
-                                accession = baseFilename.split(".")[0] + "." + accession
-                                
+                            # if accession.split(".")[0].lower() != baseFilename.split(".")[0].lower():
+                            #     accession = baseFilename.split(".")[0] + "." + accession
+
+                            if species_name.lower() not in accession.lower():
+                               accession = species_name + "." + accession
+        
                             speciesInfoObj.sequence2id_dict[accession] = sequence_id
                             speciesInfoObj.id2sequence_dict[sequence_id] = accession
 

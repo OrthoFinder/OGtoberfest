@@ -127,6 +127,7 @@ def compute_scores(
         predogs_dict,
         manager.options.precision,
         nthreads,
+        manager.options.use_id
     )
 
     effective_size_dist = sa.distribution_analyser(
