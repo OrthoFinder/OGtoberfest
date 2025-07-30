@@ -7,7 +7,7 @@ import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
 
 from met_brewer import met_brew
-colors = met_brew(name="VanGogh2", n=16)#, brew_type="continuous") Signac
+colors = met_brew(name="VanGogh2", n=14)#, brew_type="continuous") Signac
 sns.set_theme(style="white", context="talk")
 colors = colors[::-1]
 # colors = set([
@@ -249,8 +249,8 @@ def plot_barplot(df):
     plt.show()
 
 
-input_path = r"./OrthoBench/scores_preprocessed_predicted_orthogroups/OrthoBench_global_scores.tsv"
-# input_path = r"./Sim1k/scores_preprocessed_predicted_orthogroups/Sim1k_global_scores.tsv"
+# input_path = r"./OrthoBench/scores_preprocessed_predicted_orthogroups/OrthoBench_global_scores.tsv"
+input_path = r"./Sim5k/scores_preprocessed_predicted_orthogroups/Sim5k_global_scores.tsv"
 
 
 df = pd.read_csv(input_path, sep="\t")

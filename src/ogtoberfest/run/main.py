@@ -8,7 +8,7 @@ from ogtoberfest.orthogroups import parallel_processing as orthogroups_pp
 from ogtoberfest.utils import util, files
 from ogtoberfest.run import process_args
 
-from ogtoberfest.orthologues import orthologues_preprocess
+from ogtoberfest.orthologues import parallel_processing as orthologues_pp
 from ogtoberfest.orthogroups import orthogroups_analyser as opa
 from ogtoberfest.orthogroups import score_analyser as sa
 
@@ -92,15 +92,26 @@ def main(args: Optional[List[str]] = None):
                     print(f"{method_func_name.titile()} needs to provide a database!")
                     sys.exit(1)
             file_method_list.append((manager.options.input_path, method_func_name, method))
-
-        orthogroups_pp.preprocess_files_parallel(
-            file_method_list,
-            speciesInfoObj,
-            manager,
-            funcs_dict, 
-            database=database,
-            nthreads=manager.options.nthreads
-        )         
+        
+        if main_task == "orthogroups_preprocess":
+            orthogroups_pp.preprocess_files_parallel(
+                file_method_list,
+                speciesInfoObj,
+                manager,
+                funcs_dict, 
+                database=database,
+                nthreads=manager.options.nthreads
+            )      
+        elif main_task == "orthologues_preprocess":
+            orthologues_pp.preprocess_files_parallel(
+                file_method_list,
+                speciesInfoObj,
+                manager,
+                funcs_dict, 
+                database=database,
+                nthreads=manager.options.nthreads
+            )      
+   
         sys.exit(0)
     
     ## ---------------------- Benchmarking --------------------------
