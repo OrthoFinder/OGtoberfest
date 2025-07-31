@@ -3,7 +3,7 @@ import scipy.stats as ss
 from scipy.spatial import distance
 from typing import Dict, List, Set, Optional
 from ogtoberfest.utils import util
-from ogtoberfest.orthogroups import scorefuncs as sf
+from ogtoberfest.utils import scorefuncs as sf
 from ogtoberfest.orthogroups import orthogroups_analyser as opa
 import itertools
 

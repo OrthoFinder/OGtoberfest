@@ -8,6 +8,7 @@ from ogtoberfest.orthogroups import parallel_processing as orthogroups_pp
 from ogtoberfest.utils import util, files
 from ogtoberfest.run import process_args
 
+from ogtoberfest.orthologues import orthologues_preprocess
 from ogtoberfest.orthologues import parallel_processing as orthologues_pp
 from ogtoberfest.orthogroups import orthogroups_analyser as opa
 from ogtoberfest.orthogroups import score_analyser as sa
@@ -81,7 +82,11 @@ def main(args: Optional[List[str]] = None):
                     file_method_list.append((dir_file, method_func_name, method))
                 else:
                     for file in dir_file.iterdir():
-                        file_method_list.append((file, method_func_name, method))
+                        if file.is_file():
+                            file_method_list.append((file, method_func_name, method))
+                        else:
+                            for species_file in file.iterdir():
+                                file_method_list.append((species_file, method_func_name, method))
 
         elif manager.options.input_path.is_file():
             method = re.split("_|\.", manager.options.input_path.name)[0]

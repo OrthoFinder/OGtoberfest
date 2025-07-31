@@ -143,10 +143,10 @@ class FileHandler:
 
                             # if accession.split(".")[0].lower() != baseFilename.split(".")[0].lower():
                             #     accession = baseFilename.split(".")[0] + "." + accession
-
+                            accession = accession.split()[0]
                             if species_name.lower() not in accession.lower():
                                accession = species_name + "." + accession
-        
+
                             speciesInfoObj.sequence2id_dict[accession] = sequence_id
                             speciesInfoObj.id2sequence_dict[sequence_id] = accession
 

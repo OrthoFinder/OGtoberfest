@@ -3,7 +3,7 @@ import pathlib
 from collections import Counter
 from typing import Optional, List, Set, Tuple, Dict 
 from ogtoberfest.utils import util
-from ogtoberfest.orthogroups import scorefuncs as sf
+from ogtoberfest.utils import scorefuncs as sf
 
 
 def get_expected_genes(
